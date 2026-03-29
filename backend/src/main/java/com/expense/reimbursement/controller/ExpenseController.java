@@ -42,7 +42,7 @@ public class ExpenseController {
     private final ExpenseService expenseService;
 
     @PostMapping
-    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('EMPLOYEE','MANAGER','ADMIN','FINANCE','DIRECTOR','CFO')")
     public ResponseEntity<ApiResponse<ExpenseResponse>> createExpense(
             Principal principal,
             @Valid @RequestBody CreateExpenseRequest request
@@ -70,7 +70,7 @@ public class ExpenseController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('EMPLOYEE','MANAGER','ADMIN')")
+    @PreAuthorize("hasAnyRole('EMPLOYEE','MANAGER','ADMIN','FINANCE','DIRECTOR','CFO')")
     public ResponseEntity<ApiResponse<ExpenseResponse>> getExpenseById(@PathVariable Long id, Principal principal) {
         return ResponseEntity.ok(ApiResponse.success("Expense fetched successfully",
                 expenseService.getExpenseForUser(principal.getName(), id)));
@@ -88,7 +88,7 @@ public class ExpenseController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('EMPLOYEE','MANAGER','ADMIN','FINANCE','DIRECTOR','CFO')")
     public ResponseEntity<ApiResponse<ExpenseResponse>> updateExpense(
             @PathVariable Long id,
             Principal principal,
@@ -99,7 +99,7 @@ public class ExpenseController {
     }
 
     @PostMapping("/{id}/submit")
-    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('EMPLOYEE','MANAGER','ADMIN','FINANCE','DIRECTOR','CFO')")
     @Operation(summary = "Submit expense", description = "Moves an expense from DRAFT to PENDING and builds approval workflow chain.")
     public ResponseEntity<ApiResponse<ExpenseResponse>> submitExpense(@PathVariable Long id, Principal principal) {
         return ResponseEntity.ok(ApiResponse.success("Expense submitted successfully",
@@ -107,14 +107,14 @@ public class ExpenseController {
     }
 
     @GetMapping("/{id}/history")
-    @PreAuthorize("hasAnyRole('EMPLOYEE','MANAGER','ADMIN')")
+    @PreAuthorize("hasAnyRole('EMPLOYEE','MANAGER','ADMIN','FINANCE','DIRECTOR','CFO')")
     public ResponseEntity<ApiResponse<List<ExpenseHistoryResponse>>> expenseHistory(@PathVariable Long id, Principal principal) {
         return ResponseEntity.ok(ApiResponse.success("Expense history fetched successfully",
                 expenseService.getExpenseHistory(principal.getName(), id)));
     }
 
     @PostMapping("/{id}/receipt")
-    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('EMPLOYEE','MANAGER','ADMIN','FINANCE','DIRECTOR','CFO')")
     public ResponseEntity<ApiResponse<String>> uploadReceipt(
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file,

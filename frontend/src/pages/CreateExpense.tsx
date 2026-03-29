@@ -31,6 +31,38 @@ interface ReceiptPreview {
   preview: string;
 }
 
+const normalizeDateForInput = (rawDate?: string): string | null => {
+  if (!rawDate) {
+    return null;
+  }
+
+  const value = rawDate.trim();
+  // Already in HTML date input format.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+
+  // Convert dd/MM/yyyy or dd-MM-yyyy into yyyy-MM-dd.
+  const dmy = value.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if (dmy) {
+    const day = dmy[1].padStart(2, '0');
+    const month = dmy[2].padStart(2, '0');
+    const year = dmy[3];
+    return `${year}-${month}-${day}`;
+  }
+
+  // Convert yyyy/MM/dd into yyyy-MM-dd.
+  const ymd = value.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
+  if (ymd) {
+    const year = ymd[1];
+    const month = ymd[2].padStart(2, '0');
+    const day = ymd[3].padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  return null;
+};
+
 export const CreateExpense = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -119,7 +151,10 @@ export const CreateExpense = () => {
         setValue('amount', ocr.amount);
       }
       if (ocr.date) {
-        setValue('date', ocr.date);
+        const normalizedDate = normalizeDateForInput(ocr.date);
+        if (normalizedDate) {
+          setValue('date', normalizedDate);
+        }
       }
       if (ocr.description) {
         setValue('description', ocr.description);

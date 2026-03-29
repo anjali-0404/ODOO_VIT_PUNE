@@ -58,9 +58,6 @@ public class ExpenseService {
     @Transactional
     public ExpenseResponse createExpense(String authenticatedEmail, CreateExpenseRequest request) {
         User employee = userService.getUserByEmailOrThrow(authenticatedEmail);
-        if (employee.getRole() != Role.EMPLOYEE) {
-            throw new BadRequestException("Only EMPLOYEE can create expenses");
-        }
 
         Expense expense = Expense.builder()
                 .company(employee.getCompany())
