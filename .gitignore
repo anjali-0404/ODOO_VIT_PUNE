@@ -1,12 +1,12 @@
-HELP.md
-target/
+backend/HELP.md
+backend/target/
 logs/
 *.log
 node_modules/
-uploads/
+backend/uploads/
 .env
 .env.*
-.mvn/wrapper/maven-wrapper.jar
+backend/.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 

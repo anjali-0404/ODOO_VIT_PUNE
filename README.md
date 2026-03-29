@@ -1,7 +1,7 @@
-# Expense Reimbursement System Backend
+# Expense Reimbursement System
 
 ## Problem Statement
-Organizations need a reliable way to submit, review, and approve employee expense claims with proper controls. Manual workflows are slow, error-prone, and hard to audit. This backend solves that by providing a secure, role-based, API-first reimbursement workflow with traceability.
+Organizations need a reliable way to submit, review, and approve employee expense claims with proper controls. Manual workflows are slow, error-prone, and hard to audit. This project provides a secure, role-based reimbursement platform with API-first backend architecture and a frontend-ready repository structure.
 
 ## Key Features
 - JWT authentication and role-based authorization
@@ -23,9 +23,17 @@ Organizations need a reliable way to submit, review, and approve employee expens
 - Maven
 - Swagger/OpenAPI (springdoc)
 
-## Project Structure
+## Repository Structure
 ```text
-src/main/java/com/expense/reimbursement/
+backend/   -> Spring Boot backend service
+frontend/  -> Frontend placeholder (React planned)
+postman/   -> API collection for testing/demo
+README.md  -> Project overview and setup guide
+```
+
+Backend package structure:
+```text
+backend/src/main/java/com/expense/reimbursement/
   config/
   controller/
   dto/
@@ -34,24 +42,23 @@ src/main/java/com/expense/reimbursement/
   repository/
   security/
   service/
-src/main/resources/
-postman/
+backend/src/main/resources/
 ```
 
 ## API Overview
-Base path: `/api`
+Base path: /api
 
 Main groups:
-- Auth: `/api/auth/*`
-- Users: `/api/users/*`
-- Rules: `/api/rules/*`
-- Expenses: `/api/expenses/*`
-- Approvals: `/api/approvals/*`
-- Notifications: `/api/notifications/*`
-- Utility: `/api/ocr/*`, `/api/currency/*`
+- Auth: /api/auth/*
+- Users: /api/users/*
+- Rules: /api/rules/*
+- Expenses: /api/expenses/*
+- Approvals: /api/approvals/*
+- Notifications: /api/notifications/*
+- Utility: /api/ocr/*, /api/currency/*
 
 Swagger UI:
-- `http://localhost:8080/swagger-ui/index.html`
+- http://localhost:8080/swagger-ui/index.html
 
 ## Setup Instructions
 ### 1. Clone repository
@@ -60,11 +67,16 @@ git clone https://github.com/anjali-0404/ODOO_VIT_PUNE.git
 cd ODOO_VIT_PUNE/reimbursement
 ```
 
-### 2. Configure environment variables
+### 2. Move into backend service
+```bash
+cd backend
+```
+
+### 3. Configure environment variables
 Set these before running:
-- `DB_USERNAME`
-- `DB_PASSWORD`
-- `APP_JWT_SECRET`
+- DB_USERNAME
+- DB_PASSWORD
+- APP_JWT_SECRET
 
 Example (Git Bash):
 ```bash
@@ -73,12 +85,12 @@ export DB_PASSWORD=your_password
 export APP_JWT_SECRET=your_long_random_secret
 ```
 
-### 3. Run application
+### 4. Run application
 ```bash
 ./mvnw spring-boot:run
 ```
 
-### 4. Build check
+### 5. Build check
 ```bash
 ./mvnw clean package -DskipTests
 ```
@@ -95,13 +107,17 @@ export APP_JWT_SECRET=your_long_random_secret
 
 ## Postman Collection
 Collection file is included at:
-- `postman/reimbursement-api.postman_collection.json`
+- postman/reimbursement-api.postman_collection.json
 
 How to use:
 1. Import collection into Postman
-2. Set `baseUrl` (default `http://localhost:8080`)
-3. Run `Auth -> Login` to auto-store JWT token
-4. Execute requests in the order from the README flow
+2. Set baseUrl (default http://localhost:8080)
+3. Run Auth -> Login to auto-store JWT token
+4. Execute requests in the order from the demo flow
+
+## Frontend Placeholder
+- frontend/README.md contains initial frontend note.
+- Planned stack: React.
 
 ## Team / Author
 - Team: ODOO VIT Pune
