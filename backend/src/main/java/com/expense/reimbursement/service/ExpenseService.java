@@ -68,7 +68,7 @@ public class ExpenseService {
                 .description(request.getDescription().trim())
                 .expenseDate(request.getExpenseDate())
                 .status(ExpenseStatus.DRAFT)
-                .currentStep(null)
+                .currentStep(0)
                 .build();
 
         Expense saved = expenseRepository.save(expense);
@@ -361,7 +361,7 @@ public class ExpenseService {
 
         if (nextStep.isEmpty()) {
             expense.setStatus(ExpenseStatus.APPROVED);
-            expense.setCurrentStep(null);
+            expense.setCurrentStep(0);
             return;
         }
 

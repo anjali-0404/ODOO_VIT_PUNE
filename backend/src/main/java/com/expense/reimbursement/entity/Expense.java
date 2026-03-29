@@ -74,6 +74,7 @@ public class Expense {
     @Column(nullable = false, length = 20)
     private ExpenseStatus status;
 
+    @Column(name = "current_level", nullable = false)
     private Integer currentStep;
 
     private LocalDateTime submittedAt;
@@ -100,6 +101,9 @@ public class Expense {
         this.updatedAt = now;
         if (this.status == null) {
             this.status = ExpenseStatus.DRAFT;
+        }
+        if (this.currentStep == null) {
+            this.currentStep = 0;
         }
     }
 

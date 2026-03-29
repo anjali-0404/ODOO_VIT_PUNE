@@ -1,8 +1,8 @@
 package com.expense.reimbursement.service;
 
-import java.time.LocalDateTime;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -147,7 +147,7 @@ public class ApprovalService {
         approval.setDecisionAt(LocalDateTime.now());
         approval.setCurrentStep(false);
         expense.setStatus(ExpenseStatus.REJECTED);
-        expense.setCurrentStep(null);
+        expense.setCurrentStep(0);
     }
 
     private void applyApproval(Expense expense, Approval approval, User approver, String comment) {
@@ -161,7 +161,7 @@ public class ApprovalService {
 
         if (progress.isApproved()) {
             expense.setStatus(ExpenseStatus.APPROVED);
-            expense.setCurrentStep(null);
+            expense.setCurrentStep(0);
             expense.getApprovals().stream()
                     .filter(a -> a.getDecision() == ApprovalDecision.PENDING)
                     .forEach(a -> a.setCurrentStep(false));
