@@ -26,7 +26,8 @@ Organizations need a reliable way to submit, review, and approve employee expens
 ## Repository Structure
 ```text
 backend/   -> Spring Boot backend service
-frontend/  -> Frontend placeholder (React planned)
+frontend/  -> React frontend (Vite + TypeScript)
+ocr-service/ -> Python OCR microservice
 postman/   -> API collection for testing/demo
 README.md  -> Project overview and setup guide
 ```
@@ -64,7 +65,7 @@ Swagger UI:
 ### 1. Clone repository
 ```bash
 git clone https://github.com/anjali-0404/ODOO_VIT_PUNE.git
-cd ODOO_VIT_PUNE/reimbursement
+cd reimbursement
 ```
 
 ### 2. Move into backend service
@@ -72,14 +73,25 @@ cd ODOO_VIT_PUNE/reimbursement
 cd backend
 ```
 
-### 3. Configure environment variables
-Set these before running:
+### 3. Configure environment variables (.env recommended)
+Create or update `.env` in repository root (or `backend/.env`) with:
+
+```env
+DB_URL=jdbc:postgresql://<your-neon-host>/<your-db>?sslmode=require&channelBinding=require
+DB_USERNAME=<your-db-user>
+DB_PASSWORD=<your-db-password>
+APP_JWT_SECRET=<your-long-random-secret>
+```
+
+Required variables:
+- DB_URL (must be JDBC format)
 - DB_USERNAME
 - DB_PASSWORD
 - APP_JWT_SECRET
 
 Example (Git Bash):
 ```bash
+export DB_URL=jdbc:postgresql://localhost:5432/expense_db
 export DB_USERNAME=postgres
 export DB_PASSWORD=your_password
 export APP_JWT_SECRET=your_long_random_secret
@@ -89,6 +101,10 @@ export APP_JWT_SECRET=your_long_random_secret
 ```bash
 ./mvnw spring-boot:run
 ```
+
+Neon notes:
+- Keep `sslmode=require` in DB_URL.
+- Prefer DB_USERNAME/DB_PASSWORD as separate variables instead of embedding credentials in DB_URL.
 
 ### 5. Build check
 ```bash
@@ -115,9 +131,9 @@ How to use:
 3. Run Auth -> Login to auto-store JWT token
 4. Execute requests in the order from the demo flow
 
-## Frontend Placeholder
-- frontend/README.md contains initial frontend note.
-- Planned stack: React.
+## Frontend and OCR
+- frontend/ contains the React (Vite + TypeScript) application.
+- ocr-service/ contains the Python OCR microservice used by backend OCR endpoints.
 
 ## Team / Author
 - Team: ODOO VIT Pune
