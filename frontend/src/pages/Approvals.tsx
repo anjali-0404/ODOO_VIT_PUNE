@@ -13,6 +13,7 @@ import {
   convertCurrency,
   getCompanyCurrency,
   type Expense,
+  type ApprovalActor,
 } from '../services/mockData';
 
 export const Approvals = () => {
@@ -24,14 +25,26 @@ export const Approvals = () => {
   const [comment, setComment] = useState('');
 
   const companyCurrency = getCompanyCurrency();
+  const actor: ApprovalActor | null = user
+    ? {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role as ApprovalActor['role'],
+      }
+    : null;
 
   const loadData = () => {
-    setExpenses(getExpensesForApproval());
+    if (!actor) {
+      setExpenses([]);
+      return;
+    }
+    setExpenses(getExpensesForApproval(actor));
   };
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [user?.id, user?.role]);
 
   const handleAction = (type: 'approve' | 'reject', expenseId: string) => {
     setCommentModal({ open: true, type, expenseId });
@@ -39,11 +52,11 @@ export const Approvals = () => {
   };
 
   const confirmAction = () => {
-    const approverName = user?.name || 'Manager';
+    if (!actor) return;
     if (commentModal.type === 'approve') {
-      approveExpense(commentModal.expenseId, approverName, comment);
+      approveExpense(commentModal.expenseId, actor, comment);
     } else {
-      rejectExpense(commentModal.expenseId, approverName, comment);
+      rejectExpense(commentModal.expenseId, actor, comment);
     }
     setCommentModal({ open: false, type: 'approve', expenseId: '' });
     loadData();

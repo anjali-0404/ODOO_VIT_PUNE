@@ -4,6 +4,8 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
+import { sendPasswordEmail } from '../services/mockData';
 
 export const Login = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -11,6 +13,9 @@ export const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [apiError, setApiError] = useState('');
+  const [isForgotOpen, setIsForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotMessage, setForgotMessage] = useState('');
 
   const onSubmit = (data: Record<string, any>) => {
     setApiError('');
@@ -36,6 +41,17 @@ export const Login = () => {
     } else {
         setApiError('Invalid credentials. (Hint: Please sign up first)');
     }
+  };
+
+  const handleForgotPassword = () => {
+    const users = getUsers();
+    const foundUser = users.find((u) => u.email === forgotEmail);
+    if (!foundUser) {
+      setForgotMessage('No user found with this email.');
+      return;
+    }
+    const tempPassword = sendPasswordEmail(forgotEmail);
+    setForgotMessage(`Temporary password sent: ${tempPassword}`);
   };
 
   return (
@@ -79,12 +95,40 @@ export const Login = () => {
             <Link to="/signup" className="font-medium text-primary hover:text-blue-500 transition-colors">
               Don't have an account? Signup
             </Link>
-            <a href="#" className="font-medium text-gray-500 hover:text-gray-900">
+            <button
+              type="button"
+              onClick={() => {
+                setIsForgotOpen(true);
+                setForgotMessage('');
+              }}
+              className="font-medium text-gray-500 hover:text-gray-900"
+            >
               Forgot password?
-            </a>
+            </button>
           </div>
         </form>
       </div>
+
+      <Modal isOpen={isForgotOpen} onClose={() => setIsForgotOpen(false)} title="Reset Password">
+        <div className="space-y-4">
+          <Input
+            label="Email"
+            type="email"
+            value={forgotEmail}
+            onChange={(e) => setForgotEmail(e.target.value)}
+            placeholder="Enter your registered email"
+          />
+          {forgotMessage && <p className="text-sm text-gray-600">{forgotMessage}</p>}
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={() => setIsForgotOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleForgotPassword}>
+              Send Password
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
