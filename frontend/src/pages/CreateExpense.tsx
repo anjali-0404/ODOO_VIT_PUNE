@@ -8,7 +8,7 @@ import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { useAuth } from '../context/AuthContext';
-import { convertCurrencyAmount, createExpense as createExpenseApi } from '../services/api';
+import { convertCurrencyAmount, createExpense as createExpenseApi, scanReceiptOcr } from '../services/api';
 
 const currencyOptions = [
   { label: 'USD', value: 'USD' },
@@ -107,23 +107,32 @@ export const CreateExpense = () => {
       reader.readAsDataURL(file);
     });
 
-    simulateOCR(files[0]);
+    void runOcr(files[0]);
   };
 
-  const simulateOCR = (file: File) => {
+  const runOcr = async (file: File) => {
     setIsOcrLoading(true);
-    const fileName = file.name.replace(/\.[^/.]+$/, '');
-    const amountFromName = fileName.match(/(\d+(?:\.\d{1,2})?)/)?.[1] || '5667';
-    const merchantGuess = fileName.split(/[-_ ]/).filter(Boolean)[0] || 'Merchant';
+    try {
+      const ocr = await scanReceiptOcr(file);
 
-    setTimeout(() => {
-      setValue('amount', amountFromName);
-      setValue('category', 'Food');
-      setValue('merchant', merchantGuess);
-      setValue('description', `${merchantGuess} bill`);
-      setValue('date', new Date().toISOString().split('T')[0]);
+      if (ocr.amount) {
+        setValue('amount', ocr.amount);
+      }
+      if (ocr.date) {
+        setValue('date', ocr.date);
+      }
+      if (ocr.description) {
+        setValue('description', ocr.description);
+      }
+      // Keep a safe category default if OCR did not infer category.
+      if (!watch('category')) {
+        setValue('category', 'Other');
+      }
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : 'OCR scan failed');
+    } finally {
       setIsOcrLoading(false);
-    }, 2000);
+    }
   };
 
   const removeReceipt = (id: string) => {

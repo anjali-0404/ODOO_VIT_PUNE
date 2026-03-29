@@ -106,6 +106,12 @@ export interface CurrencyConversionResponse {
   exchangeRate: number;
 }
 
+export interface OcrScanResponse {
+  amount?: string;
+  date?: string;
+  description?: string;
+}
+
 export interface ExpenseHistoryResponse {
   id: number;
   action: string;
@@ -298,6 +304,23 @@ export const convertCurrencyAmount = async (from: string, to: string, amount: nu
     const { data } = await api.get<ApiResponse<CurrencyConversionResponse>>('/currency/convert', {
       params: { from, to, amount },
     });
+    return data.data;
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+};
+
+export const scanReceiptOcr = async (file: File): Promise<OcrScanResponse> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const { data } = await api.post<ApiResponse<OcrScanResponse>>('/ocr/scan', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
     return data.data;
   } catch (error) {
     throw new Error(getApiErrorMessage(error));
