@@ -293,8 +293,8 @@ public class ExpenseService {
     }
 
     private void buildApprovalChain(Expense expense, User employee) {
-        User financeApprover = userService.getFirstUserByCompanyAndRoleOrThrow(expense.getCompany().getId(), Role.FINANCE);
-        User directorApprover = userService.getFirstUserByCompanyAndRoleOrThrow(expense.getCompany().getId(), Role.DIRECTOR);
+        User financeApprover = getRequiredApproverOrValidationError(expense.getCompany().getId(), Role.FINANCE);
+        User directorApprover = getRequiredApproverOrValidationError(expense.getCompany().getId(), Role.DIRECTOR);
 
         int stepOrder = 1;
 
@@ -330,6 +330,14 @@ public class ExpenseService {
         expense.getApprovals().stream()
                 .min(Comparator.comparing(Approval::getStepOrder))
                 .ifPresent(approval -> approval.setCurrentStep(true));
+    }
+
+    private User getRequiredApproverOrValidationError(Long companyId, Role role) {
+        try {
+            return userService.getFirstUserByCompanyAndRoleOrThrow(companyId, role);
+        } catch (ResourceNotFoundException ex) {
+            throw new BadRequestException("Business rule violation: configure at least one " + role + " approver before submission");
+        }
     }
 
     private void validateReceiptFile(MultipartFile file) {
