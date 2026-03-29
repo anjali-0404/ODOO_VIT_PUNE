@@ -82,7 +82,7 @@ export const CreateExpense = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const onSubmit = (data: Record<string, string>) => {
+  const buildExpenseFromForm = (data: Record<string, string>) => {
     const expense = createExpense({
       employee: user?.name || 'Unknown',
       employeeEmail: user?.email || '',
@@ -97,7 +97,16 @@ export const CreateExpense = () => {
       companyCurrency,
       receiptUrl: receiptPreview || undefined,
     });
-    // Submit immediately
+    return expense;
+  };
+
+  const onSaveDraft = (data: Record<string, string>) => {
+    buildExpenseFromForm(data);
+    navigate('/expenses');
+  };
+
+  const onSubmitNow = (data: Record<string, string>) => {
+    const expense = buildExpenseFromForm(data);
     submitExpense(expense.id);
     navigate('/expenses');
   };
@@ -162,7 +171,7 @@ export const CreateExpense = () => {
 
         {/* Right: Expense Form matching wireframe */}
         <Card>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmitNow)} className="space-y-4">
             <Input
               label="Description"
               {...register('description', { required: 'Description is required' })}
@@ -228,9 +237,14 @@ export const CreateExpense = () => {
               </div>
             </div>
 
-            <Button type="submit" className="w-full">
-              Submit
-            </Button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Button type="button" variant="outline" onClick={handleSubmit(onSaveDraft)}>
+                Save Draft
+              </Button>
+              <Button type="submit" className="w-full">
+                Submit
+              </Button>
+            </div>
           </form>
         </Card>
       </div>

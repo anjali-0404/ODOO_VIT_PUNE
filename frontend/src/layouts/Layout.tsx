@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Receipt, FilePlus, CheckSquare, Users, Settings,
-  LogOut, Bell, Search, Menu, ShieldCheck,
+  LogOut, Bell, Search, Menu,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../utils';
@@ -42,7 +42,6 @@ export const Layout = () => {
     { icon: <FilePlus size={20} />, label: 'Submit Expense', path: '/expenses/create', roles: ['Admin', 'Manager', 'Employee'] },
     { icon: <CheckSquare size={20} />, label: 'Approvals', path: '/approvals', roles: ['Admin', 'Manager', 'CFO'] },
     { icon: <Users size={20} />, label: 'Users', path: '/users', roles: ['Admin'] },
-    { icon: <ShieldCheck size={20} />, label: 'Approval Rules', path: '/settings', roles: ['Admin'] },
     { icon: <Settings size={20} />, label: 'Settings', path: '/settings', roles: ['Admin', 'Manager', 'Employee', 'Finance', 'CFO'] },
   ];
 

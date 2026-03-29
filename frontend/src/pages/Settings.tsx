@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
+import { useAuth } from '../context/AuthContext';
 import {
   getMockUsers,
   getApprovalRules,
@@ -17,6 +18,7 @@ import {
 } from '../services/mockData';
 
 export const Settings = () => {
+  const { user } = useAuth();
   const [rules, setRules] = useState<ApprovalRule[]>([]);
   const [users, setUsers] = useState<MockUser[]>([]);
   const [editingRule, setEditingRule] = useState<ApprovalRule | null>(null);
@@ -106,6 +108,38 @@ export const Settings = () => {
     const updated = editingRule.approvers.filter((_, i) => i !== index);
     setEditingRule({ ...editingRule, approvers: updated });
   };
+
+  if (user?.role !== 'Admin') {
+    return (
+      <div className="space-y-6 max-w-3xl">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Account Settings</h1>
+          <p className="text-sm text-gray-500 mt-1">Manage your profile and session information</p>
+        </div>
+
+        <Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-gray-400">Name</p>
+              <p className="text-sm font-medium text-gray-800 mt-1">{user?.name || '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Email</p>
+              <p className="text-sm font-medium text-gray-800 mt-1">{user?.email || '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Role</p>
+              <p className="text-sm font-medium text-gray-800 mt-1">{user?.role || '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Company Currency</p>
+              <p className="text-sm font-medium text-gray-800 mt-1">{localStorage.getItem('company_currency') || 'USD'}</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -1,8 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './layouts/Layout';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { Home } from './pages/Home';
+import { AuthProvider, useAuth, type Role } from './context/AuthContext';
 import { Dashboard } from './pages/Dashboard';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
@@ -21,6 +20,28 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+type AllowedRole = Exclude<Role, null>;
+
+const RoleRoute = ({
+  children,
+  allowedRoles,
+}: {
+  children: React.ReactNode;
+  allowedRoles: AllowedRole[];
+}) => {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!user.role || !allowedRoles.includes(user.role)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -35,8 +56,22 @@ function App() {
             <Route path="/expenses" element={<Expenses />} />
             <Route path="/expenses/create" element={<CreateExpense />} />
             <Route path="/expenses/:id" element={<ExpenseDetail />} />
-            <Route path="/approvals" element={<Approvals />} />
-            <Route path="/users" element={<Users />} />
+            <Route
+              path="/approvals"
+              element={(
+                <RoleRoute allowedRoles={['Admin', 'Manager', 'CFO']}>
+                  <Approvals />
+                </RoleRoute>
+              )}
+            />
+            <Route
+              path="/users"
+              element={(
+                <RoleRoute allowedRoles={['Admin']}>
+                  <Users />
+                </RoleRoute>
+              )}
+            />
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Routes>
