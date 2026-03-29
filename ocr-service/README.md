@@ -1,171 +1,137 @@
-# 🧾 OCR Microservice
+# OCR Service
 
-An AI-powered receipt and invoice extraction service built with **FastAPI**, **Tesseract OCR**, and **HuggingFace Transformers**. Upload a receipt image and get back structured JSON — vendor, line items, totals, tax, payment method, category, currency detection, and live currency conversion.
+FastAPI-based OCR microservice for extracting structured receipt and invoice data.
 
-No external LLM APIs. Fully self-hosted.
+It combines:
+- Tesseract OCR for text extraction
+- Rule-based parsing for fields and totals
+- Zero-shot classification (BART MNLI) for category and currency fallback
+- Optional currency conversion using ExchangeRate API
 
----
+## What It Extracts
 
-## Architecture
+- Vendor name
+- Invoice or receipt number
+- Date and time
+- Payment method
+- Line items
+- Subtotal, tax, total
+- Expense category
+- Receipt currency and conversion to organization currency
 
-```
-Client (Flask Tester / Odoo / Any HTTP client)
-        │
-        │  POST /ocr/extract  (multipart/form-data)
-        ▼
-┌─────────────────────────────┐
-│     FastAPI OCR Service     │
-│                             │
-│  1. Validate image          │
-│  2. Preprocess (resize, B/W)│
-│  3. Tesseract OCR  ───────► │
-│  4. Regex parsing           │
-│  5. AI classification ────► │──► HuggingFace (BART MNLI)
-│  6. Currency conversion ──► │──► ExchangeRate API
-│  7. Return OCRResponse      │
-└─────────────────────────────┘
-```
+## Repository Layout
 
----
-
-## Features
-
-* **Fully self-hosted** — no paid APIs required
-
-* Extracts:
-
-  * vendor, invoice number, date, time
-  * payment method
-  * line items
-  * subtotal, tax, total
-
-* **AI-powered classification**
-
-  * Expense category detection
-  * Currency detection fallback
-
-* **Smart currency handling**
-
-  * Auto-detect receipt currency
-  * Convert to organization currency
-
-* **Robust OCR pipeline**
-
-  * Grayscale conversion
-  * Image upscaling for better accuracy
-  * Tesseract tuned for receipts (`--oem 3 --psm 6`)
-
-* Supports:
-
-  * JPEG, PNG, WEBP, TIFF, BMP (max 10 MB)
-
-* Production-ready:
-
-  * Rate limiting (30 req/min)
-  * CORS enabled
-  * Pydantic schemas
-  * Structured logging
-
-* Includes a **Flask tester UI** for local testing
-
----
-
-## Project Structure
-
-```
+```text
 ocr-service/
-├── main.py           # FastAPI OCR service
-├── app.py            # Flask tester UI
-├── requirements.txt  # Python dependencies
-└── README.md
+  main.py           FastAPI OCR service
+  app.py            Flask-based local tester UI
+  requirements.txt  Python dependencies
+  README.md
 ```
 
----
+## Prerequisites
 
-## Quickstart (Local)
+- Python 3.10+
+- Tesseract OCR installed and available on PATH
 
-### 1. Prerequisites
+Install Tesseract:
 
-* Python 3.10+
-* Tesseract OCR installed
-
----
-
-### 2. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-### 3. Install Tesseract
-
-#### Ubuntu:
+- Ubuntu
 
 ```bash
 sudo apt install tesseract-ocr
 ```
 
-#### Mac:
+- macOS
 
 ```bash
 brew install tesseract
 ```
 
-#### Windows:
+- Windows
+  - Install from the official project releases.
+  - Ensure the install directory (for example, C:\Program Files\Tesseract-OCR) is added to PATH.
+  - Verify with:
 
-Download from:
-[https://github.com/tesseract-ocr/tesseract](https://github.com/tesseract-ocr/tesseract)
+```bash
+tesseract --version
+```
 
----
+## Setup
 
-### 4. Run OCR Service
+From the ocr-service directory:
+
+```bash
+pip install -r requirements.txt
+```
+
+## Run the Service
+
+Option 1 (matches current code entrypoint):
 
 ```bash
 python main.py
 ```
 
-Runs at:
+Option 2 (explicit uvicorn):
 
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
-http://localhost:8000
-```
 
----
+Service URL:
+- http://localhost:8000
 
-### 5. Run Flask Tester (optional)
+Important note:
+- The first startup can be slower because the zero-shot model is loaded during app lifespan initialization.
+
+## Run Local Tester UI (Optional)
 
 ```bash
 python app.py
 ```
 
-Open:
+Tester URL:
+- http://localhost:5001
 
+## API
+
+### POST /ocr/extract
+
+Consumes multipart/form-data.
+
+Fields:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| file | file | Yes | Receipt image |
+| org_currency | string | Yes | Organization/base currency code, for example INR |
+| receipt_currency | string | No | Override detected receipt currency |
+| include_raw_text | bool | No | Include OCR text in response |
+
+Accepted file types:
+- image/jpeg
+- image/png
+- image/webp
+- image/tiff
+- image/bmp
+
+Max file size:
+- 10 MB
+
+Rate limit:
+- 30 requests per minute per client IP
+
+Example request:
+
+```bash
+curl -X POST http://localhost:8000/ocr/extract \
+  -F "file=@receipt.jpg" \
+  -F "org_currency=INR" \
+  -F "include_raw_text=true"
 ```
-http://localhost:5001
-```
 
----
-
-## API Reference
-
-### `POST /ocr/extract`
-
-Extract structured data from a receipt image.
-
-### Request — `multipart/form-data`
-
-| Field              | Type   | Required | Description                |
-| ------------------ | ------ | -------- | -------------------------- |
-| `file`             | file   | ✅        | Receipt image              |
-| `org_currency`     | string | ✅        | Target currency (e.g. INR) |
-| `receipt_currency` | string | ❌        | Override detected currency |
-| `include_raw_text` | bool   | ❌        | Include OCR text           |
-
----
-
-### Response
+Example success response:
 
 ```json
 {
@@ -177,51 +143,41 @@ Extract structured data from a receipt image.
     "time": "14:32",
     "payment_method": "UPI",
     "category": "Food & Dining",
-    "currency": "INR",
     "items": [
-      { "name": "Item A", "amount": 50.00 }
+      {"name": "Item A", "amount": 50.0}
     ],
-    "subtotal": 50.00,
-    "tax": 2.50,
-    "total": 52.50,
+    "subtotal": 50.0,
+    "tax": 2.5,
+    "total": 52.5,
+    "currency": "INR",
     "org_currency": "USD",
     "conversion": {
       "from_currency": "INR",
       "to_currency": "USD",
-      "original_amount": 52.50,
+      "original_amount": 52.5,
       "converted_amount": 0.63,
       "rate": 0.012
     }
-  }
+  },
+  "raw_text": "..."
 }
 ```
 
----
+Common status codes:
 
-### Error Response
+| Code | Meaning |
+| --- | --- |
+| 200 | Success |
+| 413 | File too large |
+| 415 | Unsupported file type |
+| 429 | Rate limit exceeded |
+| 500 | Internal error |
 
-```json
-{
-  "success": false,
-  "error": "Unsupported file type"
-}
-```
+### GET /health
 
----
+Returns service health and model readiness.
 
-### Status Codes
-
-| Code | Meaning             |
-| ---- | ------------------- |
-| 200  | Success             |
-| 413  | File too large      |
-| 415  | Unsupported format  |
-| 429  | Rate limit exceeded |
-| 500  | Internal error      |
-
----
-
-### `GET /health`
+Example:
 
 ```json
 {
@@ -230,81 +186,69 @@ Extract structured data from a receipt image.
 }
 ```
 
----
+## Supported Labels
 
-## Flask Tester
+Categories:
+- Food & Dining
+- Travel & Transport
+- Utilities
+- Healthcare
+- Shopping
+- Entertainment
+- Office Supplies
+- Fuel
+- Others
 
-Local UI for testing:
-
-```
-http://localhost:5001
-```
-
-### Features
-
-* Drag & drop upload
-* Image preview
-* Currency selection
-* Raw OCR toggle
-* Line items + structured view
-* Full JSON response
-* Health check indicator
-
----
+Currencies:
+- USD
+- INR
+- EUR
+- GBP
+- JPY
+- AUD
+- CAD
+- CNY
 
 ## Environment Variables
 
-| Variable          | Required | Default                                        | Description |
-| ----------------- | -------- | ---------------------------------------------- | ----------- |
-| `OCR_SERVICE_URL` | ❌        | [http://localhost:8000](http://localhost:8000) | Backend URL |
-| `FLASK_PORT`      | ❌        | 5001                                           | Tester port |
+Used by the local Flask tester:
 
----
+| Variable | Required | Default | Purpose |
+| --- | --- | --- | --- |
+| OCR_SERVICE_URL | No | http://localhost:8000 | Target OCR service URL |
+| FLASK_PORT | No | 5001 | Tester UI port |
 
-## Calling from Python
+## Minimal Python Client Example
 
 ```python
 import requests
 
 with open("receipt.jpg", "rb") as f:
-    res = requests.post(
+    response = requests.post(
         "http://localhost:8000/ocr/extract",
         files={"file": f},
-        data={"org_currency": "INR"},
+        data={"org_currency": "INR", "include_raw_text": "false"},
+        timeout=30,
     )
 
-print(res.json())
+print(response.status_code)
+print(response.json())
 ```
-
----
-
-## Supported Categories
-
-Food & Dining · Travel & Transport · Utilities · Healthcare · Shopping · Entertainment · Office Supplies · Fuel · Others
-
----
-
-## Supported Currencies
-
-INR · USD · EUR · GBP · JPY · AUD · CAD · CNY
-
----
 
 ## Known Limitations
 
-* **Handwritten receipts** → poor accuracy (Tesseract limitation)
-* **Low-quality images** → reduced extraction accuracy
-* **Regex-based parsing** → may fail on complex invoice layouts
-* **Currency conversion** depends on external API availability
+- Handwritten receipts are less reliable with Tesseract.
+- OCR quality depends strongly on image quality and layout.
+- Rule-based parsing may miss unusual invoice formats.
+- Currency conversion depends on external exchange-rate API availability.
 
----
+## Troubleshooting
 
-## Future Improvements
+- Error: tesseract is not installed or not in PATH
+  - Install Tesseract and verify tesseract --version works in the same terminal.
 
-* LLM-based structured extraction
-* Better layout-aware parsing
-* Batch processing
-* Docker + cloud deployment
-* Authentication & API keys
+- Slow first request
+  - Expected behavior. The classification model loads on startup.
 
----
+- Conversion is null in response
+  - Check internet connectivity and target currency support from exchange-rate provider.
