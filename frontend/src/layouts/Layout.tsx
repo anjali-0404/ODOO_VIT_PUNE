@@ -7,11 +7,19 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../utils';
+import {
+  getNotifications,
+  getRelativeNotificationTime,
+  markAllNotificationsRead,
+  subscribeNotifications,
+  type AppNotification,
+} from '../services/notifications';
 
 export const Layout = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => getNotifications());
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
@@ -28,6 +36,14 @@ export const Layout = () => {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeNotifications(() => {
+      setNotifications(getNotifications());
+    });
+
+    return unsubscribe;
   }, []);
 
   const handleLogout = () => {
@@ -48,6 +64,13 @@ export const Layout = () => {
   const menuItems = allMenuItems.filter(item =>
     item.roles.includes(user?.role || 'Employee')
   );
+
+  const unreadCount = notifications.filter((item) => !item.read).length;
+
+  const handleMarkAllRead = () => {
+    markAllNotificationsRead();
+    setNotifications(getNotifications());
+  };
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -138,7 +161,9 @@ export const Layout = () => {
                 title="Notifications"
               >
                 <Bell size={20} />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                )}
               </button>
 
               <AnimatePresence>
@@ -152,33 +177,29 @@ export const Layout = () => {
                   >
                     <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                       <h3 className="font-semibold text-gray-800 text-sm">Notifications</h3>
-                      <span className="text-[10px] text-primary font-medium bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wider">2 New</span>
+                      <span className="text-[10px] text-primary font-medium bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wider">{unreadCount} New</span>
                     </div>
                     <div className="max-h-80 overflow-y-auto">
-                      <div className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer group">
-                        <div className="flex items-start gap-3">
-                          <div className="mt-0.5 w-2 h-2 bg-blue-500 rounded-full shrink-0 shadow-[0_0_0_4px_rgba(59,130,246,0.1)]"></div>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-800">Expense Approved</p>
-                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">Your expense request "Client Lunch" was approved by your manager.</p>
-                            <p className="text-[10px] font-medium text-gray-400 mt-2 uppercase tracking-wide">10 minutes ago</p>
+                      {notifications.length === 0 ? (
+                        <div className="p-6 text-center text-sm text-gray-400">No notifications yet.</div>
+                      ) : (
+                        notifications.map((item) => (
+                          <div key={item.id} className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer group">
+                            <div className="flex items-start gap-3">
+                              <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${item.read ? 'bg-gray-300' : 'bg-blue-500 shadow-[0_0_0_4px_rgba(59,130,246,0.1)]'}`}></div>
+                              <div>
+                                <p className="text-sm font-semibold text-gray-800">{item.title}</p>
+                                <p className="text-xs text-gray-500 mt-1 leading-relaxed">{item.message}</p>
+                                <p className="text-[10px] font-medium text-gray-400 mt-2 uppercase tracking-wide">{getRelativeNotificationTime(item.createdAt)}</p>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                      <div className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer group opacity-75 hover:opacity-100">
-                        <div className="flex items-start gap-3">
-                          <div className="mt-0.5 w-2 h-2 bg-transparent border-2 border-gray-300 rounded-full shrink-0"></div>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-800">System Update</p>
-                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">The ERP system will go down for maintenance this weekend at midnight.</p>
-                            <p className="text-[10px] font-medium text-gray-400 mt-2 uppercase tracking-wide">2 hours ago</p>
-                          </div>
-                        </div>
-                      </div>
+                        ))
+                      )}
                     </div>
                     <div className="p-2 text-center border-t border-gray-100 bg-gray-50/50">
                       <button 
-                        onClick={() => setIsNotificationsOpen(false)}
+                        onClick={handleMarkAllRead}
                         className="text-xs text-primary font-medium hover:text-blue-700 transition-colors p-1"
                       >
                         Mark all as read
@@ -221,14 +242,14 @@ export const Layout = () => {
                         onClick={() => { setIsProfileOpen(false); navigate('/settings'); }} 
                         className="w-full text-left px-4 py-3 text-[15px] text-slate-800 hover:bg-gray-50 transition-colors flex items-center gap-3 font-semibold"
                       >
-                        <Settings size={20} className="text-slate-400 stroke-[2]" /> Account Settings
+                        <Settings size={20} className="text-slate-400 stroke-2" /> Account Settings
                       </button>
                       <hr className="border-gray-100" />
                       <button 
                         onClick={handleLogout} 
                         className="w-full text-left px-4 py-3 text-[15px] text-red-600 hover:bg-red-50 transition-colors flex items-center gap-3 font-semibold"
                       >
-                        <LogOut size={20} className="stroke-[2]" /> Logout
+                        <LogOut size={20} className="stroke-2" /> Logout
                       </button>
                     </div>
                   </motion.div>

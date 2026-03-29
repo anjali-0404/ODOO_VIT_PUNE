@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { clearAuthToken, getMe } from '../services/api';
 
 export type Role = 'Admin' | 'Manager' | 'Employee' | 'Finance' | 'CFO' | null;
 
@@ -6,7 +7,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: Role;
+  role: Exclude<Role, null>;
   managerId?: string;
   password?: string;
 }
@@ -24,6 +25,23 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const normalizeRole = (role: string | null | undefined): Role => {
+  if (!role) {
+    return null;
+  }
+
+  const roleMap: Record<string, Exclude<Role, null>> = {
+    ADMIN: 'Admin',
+    MANAGER: 'Manager',
+    EMPLOYEE: 'Employee',
+    FINANCE: 'Finance',
+    CFO: 'CFO',
+  };
+
+  const normalized = roleMap[role.toUpperCase()];
+  return normalized || null;
+};
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -31,15 +49,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Initialize from local storage
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    
-    if (storedToken && storedUser) {
+    const initializeAuth = async () => {
+      const storedToken = localStorage.getItem('token');
+
+      if (!storedToken) {
+        setIsLoading(false);
+        return;
+      }
+
       setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-    
-    setIsLoading(false);
+
+      try {
+        const me = await getMe();
+        const role = normalizeRole(me.role);
+        if (!role) {
+          throw new Error('Unknown role in profile response');
+        }
+
+        const hydratedUser: User = {
+          id: String(me.id),
+          name: me.name,
+          email: me.email,
+          role,
+          managerId: me.managerId,
+        };
+
+        setUser(hydratedUser);
+        localStorage.setItem('user', JSON.stringify(hydratedUser));
+      } catch {
+        setUser(null);
+        setToken(null);
+        clearAuthToken();
+        localStorage.removeItem('user');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void initializeAuth();
   }, []);
 
   const login = (newToken: string, newUser: User) => {
@@ -81,6 +128,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

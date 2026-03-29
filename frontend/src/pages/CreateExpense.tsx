@@ -9,21 +9,29 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { useAuth } from '../context/AuthContext';
 import {
-  createExpense,
-  submitExpense,
   getCurrencyOptions,
   getCategoryOptions,
   convertCurrency,
   getCompanyCurrency,
 } from '../services/mockData';
+import { createExpense as createExpenseApi } from '../services/api';
+import { pushNotification } from '../services/notifications';
+
+interface ReceiptPreview {
+  id: string;
+  name: string;
+  preview: string;
+}
 
 export const CreateExpense = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [receipts, setReceipts] = useState<ReceiptPreview[]>([]);
   const [isOcrLoading, setIsOcrLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [apiError, setApiError] = useState('');
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
@@ -33,6 +41,7 @@ export const CreateExpense = () => {
       paidBy: user?.name || '',
       currency: getCompanyCurrency(),
       amount: '',
+      merchant: '',
       remarks: '',
     },
   });
@@ -48,67 +57,81 @@ export const CreateExpense = () => {
   const handleFileDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) processFile(file);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      processFiles(files);
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) processFile(file);
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length > 0) {
+      processFiles(files);
+    }
   };
 
-  const processFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setReceiptPreview(e.target?.result as string);
-      simulateOCR();
-    };
-    reader.readAsDataURL(file);
+  const processFiles = (files: File[]) => {
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const preview = e.target?.result as string;
+        setReceipts((prev) => [
+          ...prev,
+          { id: `${file.name}-${Date.now()}-${Math.random()}`, name: file.name, preview },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    simulateOCR(files[0]);
   };
 
-  const simulateOCR = () => {
+  const simulateOCR = (file: File) => {
     setIsOcrLoading(true);
-    // Simulating OCR API call: POST /expenses/ocr-upload
+    const fileName = file.name.replace(/\.[^/.]+$/, '');
+    const amountFromName = fileName.match(/(\d+(?:\.\d{1,2})?)/)?.[1] || '5667';
+    const merchantGuess = fileName.split(/[-_ ]/).filter(Boolean)[0] || 'Merchant';
+
     setTimeout(() => {
-      setValue('amount', '5667');
+      setValue('amount', amountFromName);
       setValue('category', 'Food');
-      setValue('description', 'Restaurant bill');
+      setValue('merchant', merchantGuess);
+      setValue('description', `${merchantGuess} bill`);
+      setValue('date', new Date().toISOString().split('T')[0]);
       setIsOcrLoading(false);
     }, 2000);
   };
 
-  const removeReceipt = () => {
-    setReceiptPreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+  const removeReceipt = (id: string) => {
+    setReceipts((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const buildExpenseFromForm = (data: Record<string, string>) => {
-    const expense = createExpense({
-      employee: user?.name || 'Unknown',
-      employeeEmail: user?.email || '',
-      description: data.description,
-      date: data.date,
-      category: data.category,
-      paidBy: data.paidBy,
-      remarks: data.remarks,
-      amount: Number(data.amount),
-      currency: data.currency,
-      convertedAmount: convertedAmount ?? Number(data.amount),
-      companyCurrency,
-      receiptUrl: receiptPreview || undefined,
+  const onSubmit = async (data: Record<string, string>) => {
+    setApiError('');
+    setIsSubmitting(true);
+
+    try {
+      await createExpenseApi({
+        description: data.description,
+        expenseDate: data.date,
+        category: data.category,
+        amount: Number(data.amount),
+        currency: data.currency,
+        receiptUrl: receipts[0]?.preview,
     });
-    return expense;
-  };
 
-  const onSaveDraft = (data: Record<string, string>) => {
-    buildExpenseFromForm(data);
-    navigate('/expenses');
-  };
+      pushNotification({
+        title: 'Expense Submitted',
+        message: `Expense ${data.description} was submitted and is waiting for approval.`,
+        type: 'info',
+      });
 
-  const onSubmitNow = (data: Record<string, string>) => {
-    const expense = buildExpenseFromForm(data);
-    submitExpense(expense.id);
-    navigate('/expenses');
+      navigate('/expenses');
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : 'Failed to create expense');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -135,24 +158,30 @@ export const CreateExpense = () => {
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              multiple
               className="hidden"
               onChange={handleFileSelect}
             />
-            {receiptPreview ? (
-              <div className="relative">
-                <img src={receiptPreview} alt="Receipt" className="max-h-48 mx-auto rounded-lg shadow" />
-                <button
-                  onClick={(e) => { e.stopPropagation(); removeReceipt(); }}
-                  className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 -mt-2 -mr-2"
-                >
-                  <X size={14} />
-                </button>
+            {receipts.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3">
+                {receipts.map((item) => (
+                  <div key={item.id} className="relative">
+                    <img src={item.preview} alt={item.name} className="h-24 w-full object-cover rounded-lg shadow" />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); removeReceipt(item.id); }}
+                      className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 -mt-2 -mr-2"
+                    >
+                      <X size={14} />
+                    </button>
+                    <p className="mt-1 truncate text-xs text-gray-500">{item.name}</p>
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="space-y-2">
                 <Upload className="mx-auto text-gray-400" size={40} />
-                <p className="text-gray-600 font-medium">Drag & drop receipt here</p>
-                <p className="text-xs text-gray-400">or click to browse files</p>
+                <p className="text-gray-600 font-medium">Drag & drop receipts here</p>
+                <p className="text-xs text-gray-400">or click to browse multiple files</p>
               </div>
             )}
           </div>
@@ -171,7 +200,7 @@ export const CreateExpense = () => {
 
         {/* Right: Expense Form matching wireframe */}
         <Card>
-          <form onSubmit={handleSubmit(onSubmitNow)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input
               label="Description"
               {...register('description', { required: 'Description is required' })}
@@ -185,6 +214,12 @@ export const CreateExpense = () => {
               error={errors.date?.message as string}
             />
 
+            <Input
+              label="Merchant"
+              {...register('merchant')}
+              placeholder="Auto-filled from OCR"
+            />
+
             <Select
               label="Category"
               options={getCategoryOptions()}
@@ -194,7 +229,8 @@ export const CreateExpense = () => {
 
             <Input
               label="Paid by"
-              {...register('paidBy')}
+              {...register('paidBy', { required: 'Payer is required' })}
+              error={errors.paidBy?.message as string}
             />
 
             <div className="grid grid-cols-2 gap-4">
@@ -224,6 +260,8 @@ export const CreateExpense = () => {
               {...register('remarks')}
             />
 
+            {apiError && <p className="text-sm text-red-500">{apiError}</p>}
+
             {/* Approver trail placeholder */}
             <div className="border-t border-gray-100 pt-4 mt-4">
               <p className="text-xs text-gray-400 mb-2">Approver Trail</p>
@@ -237,14 +275,9 @@ export const CreateExpense = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Button type="button" variant="outline" onClick={handleSubmit(onSaveDraft)}>
-                Save Draft
-              </Button>
-              <Button type="submit" className="w-full">
-                Submit
-              </Button>
-            </div>
+            <Button type="submit" className="w-full" isLoading={isSubmitting}>
+              Submit
+            </Button>
           </form>
         </Card>
       </div>

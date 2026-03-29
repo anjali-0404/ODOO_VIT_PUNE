@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, GripVertical, Save } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Save, ArrowUp, ArrowDown } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -19,8 +19,8 @@ import {
 
 export const Settings = () => {
   const { user } = useAuth();
-  const [rules, setRules] = useState<ApprovalRule[]>([]);
-  const [users, setUsers] = useState<MockUser[]>([]);
+  const [rules, setRules] = useState<ApprovalRule[]>(() => getApprovalRules());
+  const [users, setUsers] = useState<MockUser[]>(() => getMockUsers());
   const [editingRule, setEditingRule] = useState<ApprovalRule | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -28,10 +28,6 @@ export const Settings = () => {
     setRules(getApprovalRules());
     setUsers(getMockUsers());
   };
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   const userOptions = users.map(u => ({ label: u.name, value: u.id }));
   const managerOptions = users
@@ -107,6 +103,23 @@ export const Settings = () => {
     if (!editingRule) return;
     const updated = editingRule.approvers.filter((_, i) => i !== index);
     setEditingRule({ ...editingRule, approvers: updated });
+  };
+
+  const moveApprover = (index: number, direction: 'up' | 'down') => {
+    if (!editingRule) return;
+
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= editingRule.approvers.length) {
+      return;
+    }
+
+    const updated = [...editingRule.approvers];
+    const temp = updated[index];
+    updated[index] = updated[targetIndex];
+    updated[targetIndex] = temp;
+
+    const withOrder = updated.map((item, idx) => ({ ...item, order: idx + 1 }));
+    setEditingRule({ ...editingRule, approvers: withOrder });
   };
 
   if (user?.role !== 'Admin') {
@@ -255,7 +268,8 @@ export const Settings = () => {
                     <span className="col-span-1">#</span>
                     <span className="col-span-6">User</span>
                     <span className="col-span-3 text-center">Required</span>
-                    <span className="col-span-2 text-center">Remove</span>
+                    <span className="col-span-1 text-center">Move</span>
+                    <span className="col-span-1 text-center">Remove</span>
                   </div>
 
                   <AnimatePresence>
@@ -293,7 +307,15 @@ export const Settings = () => {
                             {approver.isRequired ? 'Required' : 'Optional'}
                           </p>
                         </div>
-                        <div className="col-span-2 text-center">
+                        <div className="col-span-1 flex items-center justify-center gap-1">
+                          <button onClick={() => moveApprover(idx, 'up')} className="text-gray-400 hover:text-gray-700" disabled={idx === 0}>
+                            <ArrowUp size={14} />
+                          </button>
+                          <button onClick={() => moveApprover(idx, 'down')} className="text-gray-400 hover:text-gray-700" disabled={idx === editingRule.approvers.length - 1}>
+                            <ArrowDown size={14} />
+                          </button>
+                        </div>
+                        <div className="col-span-1 text-center">
                           <button onClick={() => removeApprover(idx)} className="text-red-400 hover:text-red-600">
                             <Trash2 size={14} />
                           </button>
@@ -337,6 +359,17 @@ export const Settings = () => {
                   className="w-32"
                 />
                 <span className="text-lg text-gray-500 mt-6">%</span>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Approval Threshold Slider</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="100"
+                  value={editingRule.minApprovalPercentage}
+                  onChange={(e) => setEditingRule({ ...editingRule, minApprovalPercentage: Number(e.target.value) })}
+                  className="w-full"
+                />
               </div>
             </div>
 

@@ -1,57 +1,57 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, type Role } from '../context/AuthContext';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
-import { Modal } from '../components/ui/Modal';
-import { sendPasswordEmail } from '../services/mockData';
+import { getMe, loginUser } from '../services/api';
+
+interface LoginFormValues {
+  email: string;
+  password: string;
+}
+
+const normalizeRole = (role: string | undefined): Exclude<Role, null> => {
+  const roleMap: Record<string, Exclude<Role, null>> = {
+    ADMIN: 'Admin',
+    MANAGER: 'Manager',
+    EMPLOYEE: 'Employee',
+    FINANCE: 'Finance',
+    CFO: 'CFO',
+  };
+
+  return roleMap[role?.toUpperCase() || 'EMPLOYEE'] || 'Employee';
+};
 
 export const Login = () => {
-  const { register, handleSubmit, formState: { errors } } = useForm();
-  const { login, getUsers } = useAuth();
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [apiError, setApiError] = useState('');
-  const [isForgotOpen, setIsForgotOpen] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotMessage, setForgotMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const onSubmit = (data: Record<string, any>) => {
+  const onSubmit = async (data: LoginFormValues) => {
     setApiError('');
-    const users = getUsers();
-    const foundUser = users.find(u => u.email === data.email && u.password === data.password);
-    
-    // If no users exist, allow fallback mock admin for seamless testing given backend doesn't exist
-    if (getUsers().length === 0 && data.email === 'admin@admin.com') {
-        const adminFallback = {
-            id: 'mock-1', name: 'Admin Fallback', email: 'admin@admin.com', role: 'Admin'
-        };
-        login('mock-jwt-token', adminFallback as unknown as any);
-        navigate('/');
-        return;
-    }
+    setIsSubmitting(true);
+    try {
+      const loginResponse = await loginUser(data.email, data.password);
+      const profile = await getMe();
 
-    if (foundUser) {
-        // Strip out password and login
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { password, ...safeUser } = foundUser;
-        login('mock-jwt-token-abcd', safeUser as unknown as any);
-        navigate(location.state?.from || '/');
-    } else {
-        setApiError('Invalid credentials. (Hint: Please sign up first)');
-    }
-  };
+      login(loginResponse.accessToken, {
+        id: String(profile.id),
+        name: profile.name,
+        email: profile.email,
+        role: normalizeRole(profile.role),
+        managerId: profile.managerId,
+      });
 
-  const handleForgotPassword = () => {
-    const users = getUsers();
-    const foundUser = users.find((u) => u.email === forgotEmail);
-    if (!foundUser) {
-      setForgotMessage('No user found with this email.');
-      return;
+      navigate(location.state?.from || '/');
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : 'Unable to login. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
-    const tempPassword = sendPasswordEmail(forgotEmail);
-    setForgotMessage(`Temporary password sent: ${tempPassword}`);
   };
 
   return (
@@ -87,7 +87,7 @@ export const Login = () => {
 
           {apiError && <p className="text-red-500 text-sm text-center">{apiError}</p>}
 
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full" isLoading={isSubmitting}>
             Login
           </Button>
 
@@ -95,40 +95,12 @@ export const Login = () => {
             <Link to="/signup" className="font-medium text-primary hover:text-blue-500 transition-colors">
               Don't have an account? Signup
             </Link>
-            <button
-              type="button"
-              onClick={() => {
-                setIsForgotOpen(true);
-                setForgotMessage('');
-              }}
-              className="font-medium text-gray-500 hover:text-gray-900"
-            >
+            <button type="button" className="font-medium text-gray-500 hover:text-gray-900" disabled>
               Forgot password?
             </button>
           </div>
         </form>
       </div>
-
-      <Modal isOpen={isForgotOpen} onClose={() => setIsForgotOpen(false)} title="Reset Password">
-        <div className="space-y-4">
-          <Input
-            label="Email"
-            type="email"
-            value={forgotEmail}
-            onChange={(e) => setForgotEmail(e.target.value)}
-            placeholder="Enter your registered email"
-          />
-          {forgotMessage && <p className="text-sm text-gray-600">{forgotMessage}</p>}
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => setIsForgotOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="button" onClick={handleForgotPassword}>
-              Send Password
-            </Button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 };

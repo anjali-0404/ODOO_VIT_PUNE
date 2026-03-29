@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { Plus, Send, UserPlus } from 'lucide-react';
@@ -23,7 +23,7 @@ const roleOptions = [
 ];
 
 export const Users = () => {
-  const [users, setUsers] = useState<MockUser[]>([]);
+  const [users, setUsers] = useState<MockUser[]>(() => getMockUsers());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [passwordMsg, setPasswordMsg] = useState<{ email: string; password: string } | null>(null);
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
@@ -32,10 +32,6 @@ export const Users = () => {
     setUsers(getMockUsers());
   };
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
   // Build manager options from existing users
   const managerOptions = users
     .filter(u => u.role === 'Manager' || u.role === 'Admin' || u.role === 'CFO')
@@ -43,8 +39,12 @@ export const Users = () => {
 
   const onSubmit = (data: Record<string, string>) => {
     const managerUser = users.find(u => u.id === data.manager);
+    const usersRaw = localStorage.getItem('mockUsers');
+    const allUsers = usersRaw ? JSON.parse(usersRaw) : [];
+    const nextId = `user-${allUsers.length + 1}`;
+
     const newUser: MockUser = {
-      id: Math.random().toString(36).substring(2, 9),
+      id: nextId,
       name: data.name,
       email: data.email,
       role: data.role as MockUser['role'],
@@ -53,8 +53,6 @@ export const Users = () => {
     };
 
     // Also save with password field for login
-    const usersRaw = localStorage.getItem('mockUsers');
-    const allUsers = usersRaw ? JSON.parse(usersRaw) : [];
     allUsers.push({ ...newUser, password: 'temp123' });
     localStorage.setItem('mockUsers', JSON.stringify(allUsers));
 
@@ -89,7 +87,7 @@ export const Users = () => {
         </motion.div>
       )}
 
-      <Card className="overflow-hidden !p-0">
+      <Card className="overflow-hidden p-0!">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

@@ -128,7 +128,7 @@ export const Home: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Navigation */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
         scrolled 
@@ -139,10 +139,10 @@ export const Home: React.FC = () => {
           <div className="flex justify-between items-center py-4">
             {/* Logo */}
             <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-linear-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
                 <DollarSign className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+              <span className="text-xl font-bold bg-linear-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
                 ExpenseFlow
               </span>
             </div>
@@ -165,7 +165,7 @@ export const Home: React.FC = () => {
               </a>
               <a 
                 href="/signup" 
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2 rounded-full font-semibold hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200"
+                className="bg-linear-to-r from-blue-600 to-indigo-600 text-white px-6 py-2 rounded-full font-semibold hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200"
               >
                 Get Started
               </a>
@@ -197,7 +197,7 @@ export const Home: React.FC = () => {
                   </a>
                   <a 
                     href="/signup" 
-                    className="block w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-center py-2 rounded-full font-semibold"
+                    className="block w-full bg-linear-to-r from-blue-600 to-indigo-600 text-white text-center py-2 rounded-full font-semibold"
                   >
                     Get Started
                   </a>
@@ -220,7 +220,7 @@ export const Home: React.FC = () => {
                 </div>
                 <h1 className="text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight">
                   Simplify Your
-                  <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"> Expense Management</span>
+                  <span className="bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"> Expense Management</span>
                 </h1>
                 <p className="text-xl text-gray-600 leading-relaxed">
                   Streamline expense reporting, accelerate approvals, and gain powerful insights 
@@ -231,7 +231,7 @@ export const Home: React.FC = () => {
               <div className="flex flex-col sm:flex-row gap-4">
                 <a 
                   href="/signup"
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center"
+                  className="bg-linear-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center"
                 >
                   Start Free Trial
                   <ArrowRight className="w-5 h-5 ml-2" />
@@ -266,7 +266,7 @@ export const Home: React.FC = () => {
             <div className="relative">
               <div className="relative bg-white rounded-2xl shadow-2xl p-8">
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg">
+                  <div className="bg-linear-to-r from-green-50 to-emerald-50 p-4 rounded-lg">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600">This Month</p>
@@ -277,7 +277,7 @@ export const Home: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
+                  <div className="bg-linear-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600">Pending</p>
@@ -315,8 +315,8 @@ export const Home: React.FC = () => {
                 </div>
               </div>
               
-              <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-r from-purple-400 to-pink-400 rounded-xl opacity-20"></div>
-              <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-xl opacity-20"></div>
+              <div className="absolute -top-4 -right-4 w-24 h-24 bg-linear-to-r from-purple-400 to-pink-400 rounded-xl opacity-20"></div>
+              <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-linear-to-r from-blue-400 to-indigo-400 rounded-xl opacity-20"></div>
             </div>
           </div>
         </div>
@@ -342,7 +342,7 @@ export const Home: React.FC = () => {
           <div className="text-center mb-16">
             <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
               Everything You Need to
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"> Manage Expenses</span>
+              <span className="bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"> Manage Expenses</span>
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               From receipt capture to approval workflows, our platform provides comprehensive 
@@ -353,7 +353,7 @@ export const Home: React.FC = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <div key={index} className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center mb-6 text-blue-600">
+                <div className="w-16 h-16 bg-linear-to-r from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center mb-6 text-blue-600">
                   {feature.icon}
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">{feature.title}</h3>
@@ -365,7 +365,7 @@ export const Home: React.FC = () => {
           <div className="mt-16 text-center">
             <a 
               href="/signup"
-              className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-full font-semibold hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
+              className="inline-flex items-center space-x-2 bg-linear-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-full font-semibold hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
             >
               <span>Explore All Features</span>
               <ChevronRight className="w-5 h-5" />
@@ -375,12 +375,12 @@ export const Home: React.FC = () => {
       </section>
 
       {/* Testimonials Section */}
-      <section id="testimonials" className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+      <section id="testimonials" className="py-20 bg-linear-to-br from-gray-50 to-blue-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
               Loved by
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"> Teams Worldwide</span>
+              <span className="bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"> Teams Worldwide</span>
             </h2>
             <p className="text-xl text-gray-600">Join thousands of satisfied customers who have transformed their expense management.</p>
           </div>
@@ -412,7 +412,7 @@ export const Home: React.FC = () => {
           <div className="text-center mb-16">
             <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
               Simple, Transparent
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"> Pricing</span>
+              <span className="bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"> Pricing</span>
             </h2>
             <p className="text-xl text-gray-600">Choose the plan that fits your team's needs. No hidden fees, no surprises.</p>
           </div>
@@ -426,7 +426,7 @@ export const Home: React.FC = () => {
               }`}>
                 {plan.popular && (
                   <div className="text-center mb-4">
-                    <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    <span className="bg-linear-to-r from-blue-600 to-indigo-600 text-white px-3 py-1 rounded-full text-sm font-medium">
                       Most Popular
                     </span>
                   </div>
@@ -444,7 +444,7 @@ export const Home: React.FC = () => {
                 <ul className="space-y-4 mb-8">
                   {plan.features.map((feature, featureIndex) => (
                     <li key={featureIndex} className="flex items-center space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
                       <span className="text-gray-700">{feature}</span>
                     </li>
                   ))}
@@ -454,7 +454,7 @@ export const Home: React.FC = () => {
                   href={plan.name === 'Enterprise' ? '/contact' : '/signup'}
                   className={`w-full block text-center py-3 px-6 rounded-full font-semibold transition-all duration-300 ${
                     plan.popular
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-xl'
+                      ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white hover:shadow-xl'
                       : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                   }`}
                 >
@@ -467,7 +467,7 @@ export const Home: React.FC = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-indigo-600">
+      <section className="py-20 bg-linear-to-r from-blue-600 to-indigo-600">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
             Ready to Transform Your Expense Management?
@@ -500,7 +500,7 @@ export const Home: React.FC = () => {
           <div className="grid md:grid-cols-4 gap-8">
             <div className="md:col-span-2">
               <div className="flex items-center space-x-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-linear-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
                   <DollarSign className="w-6 h-6 text-white" />
                 </div>
                 <span className="text-xl font-bold">ExpenseFlow</span>
@@ -547,3 +547,4 @@ export const Home: React.FC = () => {
     </div>
   );
 };
+

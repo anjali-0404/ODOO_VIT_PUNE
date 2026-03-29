@@ -11,6 +11,7 @@ import { ExpenseDetail } from './pages/ExpenseDetail';
 import { Approvals } from './pages/Approvals';
 import { Users } from './pages/Users';
 import { Settings } from './pages/Settings';
+import { Home } from './pages/Home';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
