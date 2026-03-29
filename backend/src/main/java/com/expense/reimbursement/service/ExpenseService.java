@@ -87,7 +87,7 @@ public class ExpenseService {
         if (expense.getStatus() != ExpenseStatus.DRAFT) {
             throw new BadRequestException("Business rule violation: only DRAFT expenses can be submitted");
         }
-        if (employee.getManager() == null) {
+        if (employee.getRole() == Role.EMPLOYEE && employee.getManager() == null) {
             throw new BadRequestException("Business rule violation: employee must have an assigned manager before submission");
         }
 
@@ -95,13 +95,21 @@ public class ExpenseService {
         expense.getApprovals().clear();
         buildApprovalChain(expense, employee);
 
+        Optional<Approval> firstStep = getCurrentStepApproval(expense);
+        if (firstStep.isEmpty()) {
+            throw new BadRequestException("Business rule violation: approval workflow could not be initialized");
+        }
+
         expense.setStatus(ExpenseStatus.PENDING);
         expense.setSubmittedAt(LocalDateTime.now());
-        expense.setCurrentStep(1);
+        expense.setCurrentStep(firstStep.get().getStepOrder());
 
         Expense saved = expenseRepository.save(expense);
         expenseHistoryService.addHistory(saved, ExpenseHistoryAction.SUBMITTED, employee, "Expense submitted for approval");
-        notificationService.notifyUser(employee.getManager(), "New expense submitted for your approval. Expense ID: " + saved.getId());
+        getCurrentStepApproval(saved)
+                .map(Approval::getApprover)
+                .ifPresent(approver -> notificationService.notifyUser(approver,
+                "New expense submitted for your approval. Expense ID: " + saved.getId()));
         return toResponse(saved);
     }
 
@@ -288,20 +296,24 @@ public class ExpenseService {
         User financeApprover = userService.getFirstUserByCompanyAndRoleOrThrow(expense.getCompany().getId(), Role.FINANCE);
         User directorApprover = userService.getFirstUserByCompanyAndRoleOrThrow(expense.getCompany().getId(), Role.DIRECTOR);
 
-        expense.getApprovals().add(Approval.builder()
-                .expense(expense)
-                .approver(employee.getManager())
-                .requiredRole(Role.MANAGER)
-                .stepOrder(1)
-                .isCurrentStep(true)
-                .decision(ApprovalDecision.PENDING)
-                .build());
+        int stepOrder = 1;
+
+        if (employee.getManager() != null) {
+            expense.getApprovals().add(Approval.builder()
+                    .expense(expense)
+                    .approver(employee.getManager())
+                    .requiredRole(Role.MANAGER)
+                    .stepOrder(stepOrder++)
+                    .isCurrentStep(false)
+                    .decision(ApprovalDecision.PENDING)
+                    .build());
+        }
 
         expense.getApprovals().add(Approval.builder()
                 .expense(expense)
                 .approver(financeApprover)
                 .requiredRole(Role.FINANCE)
-                .stepOrder(2)
+                .stepOrder(stepOrder++)
                 .isCurrentStep(false)
                 .decision(ApprovalDecision.PENDING)
                 .build());
@@ -310,10 +322,14 @@ public class ExpenseService {
                 .expense(expense)
                 .approver(directorApprover)
                 .requiredRole(Role.DIRECTOR)
-                .stepOrder(3)
+                .stepOrder(stepOrder)
                 .isCurrentStep(false)
                 .decision(ApprovalDecision.PENDING)
                 .build());
+
+        expense.getApprovals().stream()
+                .min(Comparator.comparing(Approval::getStepOrder))
+                .ifPresent(approval -> approval.setCurrentStep(true));
     }
 
     private void validateReceiptFile(MultipartFile file) {
