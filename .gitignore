@@ -37,3 +37,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Python OCR service ###
+venv
+__pycache__/
