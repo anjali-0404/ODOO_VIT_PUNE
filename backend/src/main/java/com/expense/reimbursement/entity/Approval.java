@@ -53,6 +53,9 @@ public class Approval {
     private Integer stepOrder;
 
     @Column(nullable = false)
+    private Integer level;
+
+    @Column(nullable = false)
     private boolean isCurrentStep;
 
     @Enumerated(EnumType.STRING)
@@ -75,6 +78,12 @@ public class Approval {
         LocalDateTime now = LocalDateTime.now();
         this.createdAt = now;
         this.updatedAt = now;
+        if (this.stepOrder == null && this.level != null) {
+            this.stepOrder = this.level;
+        }
+        if (this.level == null && this.stepOrder != null) {
+            this.level = this.stepOrder;
+        }
         if (this.decision == null) {
             this.decision = ApprovalDecision.PENDING;
         }
@@ -83,5 +92,8 @@ public class Approval {
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
+        if (this.stepOrder != null) {
+            this.level = this.stepOrder;
+        }
     }
 }

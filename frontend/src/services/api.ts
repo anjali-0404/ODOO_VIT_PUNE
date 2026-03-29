@@ -344,6 +344,15 @@ export const createExpense = async (payload: ExpensePayload): Promise<ExpenseRes
   }
 };
 
+export const submitExpense = async (expenseId: string | number): Promise<ExpenseResponse> => {
+  try {
+    const { data } = await api.post<ApiResponse<ExpenseResponse>>(`/expenses/${expenseId}/submit`);
+    return data.data;
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+};
+
 export const getPendingApprovals = async (): Promise<ExpenseResponse[]> => {
   try {
     const { data } = await api.get<ApiResponse<PagedResponse<ExpenseResponse>>>('/approvals/pending');

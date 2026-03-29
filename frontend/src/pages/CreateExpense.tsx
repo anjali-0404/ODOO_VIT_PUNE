@@ -8,7 +8,7 @@ import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { useAuth } from '../context/AuthContext';
-import { convertCurrencyAmount, createExpense as createExpenseApi, scanReceiptOcr } from '../services/api';
+import { convertCurrencyAmount, createExpense as createExpenseApi, scanReceiptOcr, submitExpense as submitExpenseApi } from '../services/api';
 
 const currencyOptions = [
   { label: 'USD', value: 'USD' },
@@ -179,7 +179,7 @@ export const CreateExpense = () => {
     setIsSubmitting(true);
 
     try {
-      await createExpenseApi({
+      const created = await createExpenseApi({
         description: data.description,
         expenseDate: data.date,
         category: data.category,
@@ -188,9 +188,11 @@ export const CreateExpense = () => {
         receiptUrl: receipts[0]?.preview,
       });
 
+      await submitExpenseApi(created.id);
+
       navigate('/expenses');
     } catch (error) {
-      setApiError(error instanceof Error ? error.message : 'Failed to create expense');
+      setApiError(error instanceof Error ? error.message : 'Failed to submit expense');
     } finally {
       setIsSubmitting(false);
     }

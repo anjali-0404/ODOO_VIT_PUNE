@@ -5,7 +5,7 @@ import { Upload, Plus, FileText } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { useAuth } from '../context/AuthContext';
-import { getMyExpenses, type ExpenseResponse } from '../services/api';
+import { getMyExpenses, submitExpense as submitExpenseApi, type ExpenseResponse } from '../services/api';
 
 const statusToBadge = (status: string) => {
   const map: Record<string, 'draft' | 'submitted' | 'pending' | 'approved' | 'rejected'> = {
@@ -29,6 +29,7 @@ export const Expenses = () => {
   const [tab, setTab] = useState<'upload' | 'new'>('upload');
   const [expenses, setExpenses] = useState<ExpenseResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmittingId, setIsSubmittingId] = useState<number | null>(null);
   const [error, setError] = useState('');
 
   const loadExpenses = async () => {
@@ -47,6 +48,19 @@ export const Expenses = () => {
   useEffect(() => {
     void loadExpenses();
   }, [user]);
+
+  const handleSubmitDraft = async (expenseId: number) => {
+    setError('');
+    setIsSubmittingId(expenseId);
+    try {
+      await submitExpenseApi(expenseId);
+      await loadExpenses();
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Failed to submit expense');
+    } finally {
+      setIsSubmittingId(null);
+    }
+  };
 
   const toSubmit = expenses.filter(e => e.status === 'DRAFT' || e.status === 'Draft');
   const waitingApproval = expenses.filter(e => ['SUBMITTED', 'PENDING', 'Submitted', 'Waiting Approval'].includes(e.status));
@@ -165,7 +179,23 @@ export const Expenses = () => {
                     <td className="px-4 py-3 text-center">
                       <Badge variant={statusToBadge(exp.status)}>{exp.status}</Badge>
                     </td>
-                    <td className="px-4 py-3 text-center">-</td>
+                    <td className="px-4 py-3 text-center">
+                      {(exp.status === 'DRAFT' || exp.status === 'Draft') ? (
+                        <button
+                          type="button"
+                          className="text-xs px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+                          disabled={isSubmittingId === exp.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleSubmitDraft(exp.id);
+                          }}
+                        >
+                          {isSubmittingId === exp.id ? 'Submitting...' : 'Submit'}
+                        </button>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
                   </motion.tr>
                 ))
               )}
