@@ -52,17 +52,33 @@ backend/
 
 The backend uses these variables from application properties:
 
+- DB_URL: JDBC datasource URL (example: jdbc:postgresql://localhost:5432/expense_db)
 - DB_USERNAME: database username
 - DB_PASSWORD: database password
 - APP_JWT_SECRET: JWT signing secret
 
-Defaults exist in configuration, but use real secure values in local/dev/prod.
+The backend auto-loads environment variables from `.env` in either:
+
+- `backend/.env`
+- repository root `.env`
+
+Recommended setup (used by the current Neon connection):
+
+```env
+DB_URL=jdbc:postgresql://<your-neon-host>/<your-db>?sslmode=require&channelBinding=require
+DB_USERNAME=<your-neon-user>
+DB_PASSWORD=<your-neon-password>
+APP_JWT_SECRET=<your-long-random-secret>
+```
+
+Defaults exist in configuration for local development, but use real secure values in local/dev/prod.
 
 Example (Git Bash):
 
 ```bash
 export DB_USERNAME=postgres
 export DB_PASSWORD=your_password
+export DB_URL=jdbc:postgresql://localhost:5432/expense_db
 export APP_JWT_SECRET=your_very_long_random_secret
 ```
 
@@ -71,8 +87,15 @@ Example (Windows PowerShell):
 ```powershell
 $env:DB_USERNAME="postgres"
 $env:DB_PASSWORD="your_password"
+$env:DB_URL="jdbc:postgresql://localhost:5432/expense_db"
 $env:APP_JWT_SECRET="your_very_long_random_secret"
 ```
+
+Neon tip:
+
+- Keep `sslmode=require` in `DB_URL`.
+- Use JDBC format (`jdbc:postgresql://...`) for `DB_URL`.
+- Prefer setting username/password via `DB_USERNAME` and `DB_PASSWORD` instead of embedding them in the URL.
 
 ## Database Defaults
 
@@ -91,6 +114,12 @@ JPA behavior:
 ## Run Locally
 
 From the backend directory:
+
+- Using `.env` (recommended):
+
+```bash
+./mvnw spring-boot:run
+```
 
 - Git Bash / Linux / macOS:
 
