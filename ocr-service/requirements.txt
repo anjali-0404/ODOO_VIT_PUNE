@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pillow
+pytesseract
+transformers
+torch
+httpx
+slowapi
+python-multipart
+flask
+requests
