@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
@@ -8,14 +8,22 @@ import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { useAuth } from '../context/AuthContext';
-import {
-  getCurrencyOptions,
-  getCategoryOptions,
-  convertCurrency,
-  getCompanyCurrency,
-} from '../services/mockData';
-import { createExpense as createExpenseApi } from '../services/api';
-import { pushNotification } from '../services/notifications';
+import { convertCurrencyAmount, createExpense as createExpenseApi } from '../services/api';
+
+const currencyOptions = [
+  { label: 'USD', value: 'USD' },
+  { label: 'INR', value: 'INR' },
+  { label: 'EUR', value: 'EUR' },
+  { label: 'GBP', value: 'GBP' },
+];
+
+const categoryOptions = [
+  { label: 'Food', value: 'Food' },
+  { label: 'Travel', value: 'Travel' },
+  { label: 'Accommodation', value: 'Accommodation' },
+  { label: 'Office Supplies', value: 'Office Supplies' },
+  { label: 'Other', value: 'Other' },
+];
 
 interface ReceiptPreview {
   id: string;
@@ -32,6 +40,7 @@ export const CreateExpense = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState('');
+  const [convertedAmount, setConvertedAmount] = useState<number | null>(null);
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
@@ -39,7 +48,7 @@ export const CreateExpense = () => {
       date: new Date().toISOString().split('T')[0],
       category: '',
       paidBy: user?.name || '',
-      currency: getCompanyCurrency(),
+      currency: localStorage.getItem('company_currency') || 'USD',
       amount: '',
       merchant: '',
       remarks: '',
@@ -48,11 +57,26 @@ export const CreateExpense = () => {
 
   const watchCurrency = watch('currency');
   const watchAmount = watch('amount');
-  const companyCurrency = getCompanyCurrency();
+  const companyCurrency = localStorage.getItem('company_currency') || 'USD';
 
-  const convertedAmount = watchAmount && watchCurrency !== companyCurrency
-    ? convertCurrency(Number(watchAmount), watchCurrency, companyCurrency)
-    : null;
+  useEffect(() => {
+    const amount = Number(watchAmount);
+    if (!watchAmount || Number.isNaN(amount) || amount <= 0 || watchCurrency === companyCurrency) {
+      setConvertedAmount(null);
+      return;
+    }
+
+    const fetchConversion = async () => {
+      try {
+        const conversion = await convertCurrencyAmount(watchCurrency, companyCurrency, amount);
+        setConvertedAmount(conversion.convertedAmount);
+      } catch {
+        setConvertedAmount(null);
+      }
+    };
+
+    void fetchConversion();
+  }, [watchAmount, watchCurrency, companyCurrency]);
 
   const handleFileDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -118,12 +142,6 @@ export const CreateExpense = () => {
         amount: Number(data.amount),
         currency: data.currency,
         receiptUrl: receipts[0]?.preview,
-    });
-
-      pushNotification({
-        title: 'Expense Submitted',
-        message: `Expense ${data.description} was submitted and is waiting for approval.`,
-        type: 'info',
       });
 
       navigate('/expenses');
@@ -148,11 +166,10 @@ export const CreateExpense = () => {
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleFileDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
-              isDragging
-                ? 'border-primary bg-blue-50'
-                : 'border-gray-300 hover:border-primary hover:bg-gray-50'
-            }`}
+            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${isDragging
+              ? 'border-primary bg-blue-50'
+              : 'border-gray-300 hover:border-primary hover:bg-gray-50'
+              }`}
           >
             <input
               ref={fileInputRef}
@@ -222,7 +239,7 @@ export const CreateExpense = () => {
 
             <Select
               label="Category"
-              options={getCategoryOptions()}
+              options={categoryOptions}
               {...register('category', { required: 'Category is required' })}
               error={errors.category?.message as string}
             />
@@ -236,7 +253,7 @@ export const CreateExpense = () => {
             <div className="grid grid-cols-2 gap-4">
               <Select
                 label="Currency"
-                options={getCurrencyOptions()}
+                options={currencyOptions}
                 {...register('currency')}
               />
               <Input

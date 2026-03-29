@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { clearAuthToken, getMe } from '../services/api';
 
-export type Role = 'Admin' | 'Manager' | 'Employee' | 'Finance' | 'CFO' | null;
+export type Role = 'Admin' | 'Manager' | 'Employee' | 'Finance' | 'Director' | 'CFO' | null;
 
 export interface User {
   id: string;
@@ -18,8 +18,6 @@ interface AuthContextType {
   token: string | null;
   login: (token: string, user: User) => void;
   logout: () => void;
-  registerUser: (user: User) => boolean;
-  getUsers: () => User[];
   isLoading: boolean;
 }
 
@@ -35,6 +33,7 @@ const normalizeRole = (role: string | null | undefined): Role => {
     MANAGER: 'Manager',
     EMPLOYEE: 'Employee',
     FINANCE: 'Finance',
+    DIRECTOR: 'Director',
     CFO: 'CFO',
   };
 
@@ -103,26 +102,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('user');
   };
 
-  const getUsers = (): User[] => {
-    const usersStr = localStorage.getItem('mockUsers');
-    return usersStr ? JSON.parse(usersStr) : [];
-  };
-
-  const registerUser = (newUser: User): boolean => {
-    const users = getUsers();
-    if (users.find(u => u.email === newUser.email)) {
-      return false; // Email already registered
-    }
-    
-    // Assign random ID if not present
-    const userToSave = { ...newUser, id: newUser.id || Math.random().toString(36).substring(2, 9) };
-    users.push(userToSave);
-    localStorage.setItem('mockUsers', JSON.stringify(users));
-    return true;
-  };
-
   return (
-    <AuthContext.Provider value={{ user, role: user?.role || null, token, login, logout, registerUser, getUsers, isLoading }}>
+    <AuthContext.Provider value={{ user, role: user?.role || null, token, login, logout, isLoading }}>
       {!isLoading && children}
     </AuthContext.Provider>
   );

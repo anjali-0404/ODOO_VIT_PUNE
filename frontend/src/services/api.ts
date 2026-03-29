@@ -52,6 +52,60 @@ export interface ApprovalResponse {
   decisionAt?: string;
 }
 
+export interface AppUser {
+  id: number;
+  fullName: string;
+  email: string;
+  role: string;
+  managerId?: number;
+  companyId?: number;
+  active?: boolean;
+}
+
+export interface CreateUserPayload {
+  fullName: string;
+  email: string;
+  password: string;
+  role: 'ADMIN' | 'MANAGER' | 'EMPLOYEE' | 'FINANCE' | 'DIRECTOR' | 'CFO';
+  managerId?: number;
+}
+
+export interface ApprovalRule {
+  id: number;
+  name: string;
+  minAmount?: number;
+  maxAmount?: number;
+  requiredApprovalPercentage?: number;
+  autoApproveRole?: string;
+  active: boolean;
+}
+
+export interface CreateApprovalRulePayload {
+  name: string;
+  minAmount?: number;
+  maxAmount?: number;
+  requiredApprovalPercentage?: number;
+  autoApproveRole?: 'ADMIN' | 'MANAGER' | 'EMPLOYEE' | 'FINANCE' | 'DIRECTOR' | 'CFO';
+  active?: boolean;
+}
+
+export interface UpdateApprovalRulePayload {
+  name?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  requiredApprovalPercentage?: number;
+  autoApproveRole?: 'ADMIN' | 'MANAGER' | 'EMPLOYEE' | 'FINANCE' | 'DIRECTOR' | 'CFO';
+  active?: boolean;
+}
+
+export interface CurrencyConversionResponse {
+  from: string;
+  to: string;
+  originalAmount: number;
+  convertedAmount: number;
+  exchangeRate: number;
+}
+
 export interface ExpenseHistoryResponse {
   id: number;
   action: string;
@@ -189,6 +243,62 @@ export const getMyExpenses = async (): Promise<ExpenseResponse[]> => {
   try {
     const { data } = await api.get<ApiResponse<PagedResponse<ExpenseResponse>>>('/expenses/my');
     return data.data.items;
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+};
+
+export const listUsers = async (page = 0, size = 100): Promise<AppUser[]> => {
+  try {
+    const { data } = await api.get<ApiResponse<PagedResponse<AppUser>>>(`/users?page=${page}&size=${size}`);
+    return data.data.items;
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+};
+
+export const createUser = async (payload: CreateUserPayload): Promise<AppUser> => {
+  try {
+    const { data } = await api.post<ApiResponse<AppUser>>('/users', payload);
+    return data.data;
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+};
+
+export const listApprovalRules = async (): Promise<ApprovalRule[]> => {
+  try {
+    const { data } = await api.get<ApiResponse<ApprovalRule[]>>('/rules');
+    return data.data;
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+};
+
+export const createApprovalRule = async (payload: CreateApprovalRulePayload): Promise<ApprovalRule> => {
+  try {
+    const { data } = await api.post<ApiResponse<ApprovalRule>>('/rules', payload);
+    return data.data;
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+};
+
+export const updateApprovalRule = async (ruleId: number, payload: UpdateApprovalRulePayload): Promise<ApprovalRule> => {
+  try {
+    const { data } = await api.put<ApiResponse<ApprovalRule>>(`/rules/${ruleId}`, payload);
+    return data.data;
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+};
+
+export const convertCurrencyAmount = async (from: string, to: string, amount: number): Promise<CurrencyConversionResponse> => {
+  try {
+    const { data } = await api.get<ApiResponse<CurrencyConversionResponse>>('/currency/convert', {
+      params: { from, to, amount },
+    });
+    return data.data;
   } catch (error) {
     throw new Error(getApiErrorMessage(error));
   }

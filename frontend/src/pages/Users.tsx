@@ -1,91 +1,107 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { Plus, Send, UserPlus } from 'lucide-react';
+import { Plus, UserPlus } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
-import {
-  getMockUsers,
-  sendPasswordEmail,
-  type MockUser,
-} from '../services/mockData';
+import { createUser, listUsers, type AppUser } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const roleOptions = [
-  { label: 'Admin', value: 'Admin' },
-  { label: 'Manager', value: 'Manager' },
-  { label: 'Employee', value: 'Employee' },
-  { label: 'Finance', value: 'Finance' },
+  { label: 'Admin', value: 'ADMIN' },
+  { label: 'Manager', value: 'MANAGER' },
+  { label: 'Employee', value: 'EMPLOYEE' },
+  { label: 'Finance', value: 'FINANCE' },
+  { label: 'Director', value: 'DIRECTOR' },
   { label: 'CFO', value: 'CFO' },
 ];
 
-export const Users = () => {
-  const [users, setUsers] = useState<MockUser[]>(() => getMockUsers());
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [passwordMsg, setPasswordMsg] = useState<{ email: string; password: string } | null>(null);
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+interface UserFormValues {
+  name: string;
+  role: 'ADMIN' | 'MANAGER' | 'EMPLOYEE' | 'FINANCE' | 'DIRECTOR' | 'CFO';
+  manager?: string;
+  email: string;
+  password: string;
+}
 
-  const loadUsers = () => {
-    setUsers(getMockUsers());
+const displayRole = (role: string) => {
+  const map: Record<string, string> = {
+    ADMIN: 'Admin',
+    MANAGER: 'Manager',
+    EMPLOYEE: 'Employee',
+    FINANCE: 'Finance',
+    DIRECTOR: 'Director',
+    CFO: 'CFO',
   };
+  return map[role] || role;
+};
+
+export const Users = () => {
+  const { user } = useAuth();
+  const [users, setUsers] = useState<AppUser[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [apiError, setApiError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<UserFormValues>();
+
+  const loadUsers = async () => {
+    setIsLoading(true);
+    setApiError('');
+    try {
+      const data = await listUsers();
+      setUsers(data);
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : 'Failed to load users');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadUsers();
+  }, []);
 
   // Build manager options from existing users
   const managerOptions = users
-    .filter(u => u.role === 'Manager' || u.role === 'Admin' || u.role === 'CFO')
-    .map(u => ({ label: u.name, value: u.id }));
+    .filter(u => u.role === 'MANAGER' || u.role === 'ADMIN' || u.role === 'CFO' || u.role === 'DIRECTOR')
+    .map(u => ({ label: u.fullName, value: String(u.id) }));
 
-  const onSubmit = (data: Record<string, string>) => {
-    const managerUser = users.find(u => u.id === data.manager);
-    const usersRaw = localStorage.getItem('mockUsers');
-    const allUsers = usersRaw ? JSON.parse(usersRaw) : [];
-    const nextId = `user-${allUsers.length + 1}`;
-
-    const newUser: MockUser = {
-      id: nextId,
-      name: data.name,
-      email: data.email,
-      role: data.role as MockUser['role'],
-      managerId: data.manager || undefined,
-      managerName: managerUser?.name || undefined,
-    };
-
-    // Also save with password field for login
-    allUsers.push({ ...newUser, password: 'temp123' });
-    localStorage.setItem('mockUsers', JSON.stringify(allUsers));
-
-    setIsModalOpen(false);
-    reset();
-    loadUsers();
-  };
-
-  const handleSendPassword = (email: string) => {
-    const pwd = sendPasswordEmail(email);
-    setPasswordMsg({ email, password: pwd });
-    setTimeout(() => setPasswordMsg(null), 5000);
+  const onSubmit = async (data: UserFormValues) => {
+    setApiError('');
+    setIsSubmitting(true);
+    try {
+      await createUser({
+        fullName: data.name,
+        email: data.email,
+        password: data.password,
+        role: data.role,
+        managerId: data.manager ? Number(data.manager) : undefined,
+      });
+      setIsModalOpen(false);
+      reset();
+      await loadUsers();
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : 'Failed to create user');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Users</h1>
-        <Button onClick={() => setIsModalOpen(true)}>
+        <Button onClick={() => setIsModalOpen(true)} disabled={user?.role !== 'Admin'}>
           <Plus size={16} className="mr-2" /> New
         </Button>
       </div>
 
-      {passwordMsg && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl text-sm"
-        >
-          Password sent to <strong>{passwordMsg.email}</strong>: <code className="bg-green-100 px-2 py-0.5 rounded">{passwordMsg.password}</code>
-          <span className="text-xs text-green-600 ml-2">(user can change it afterwards)</span>
-        </motion.div>
-      )}
+      {apiError && <p className="text-sm text-red-500">{apiError}</p>}
 
       <Card className="overflow-hidden p-0!">
         <div className="overflow-x-auto">
@@ -96,13 +112,16 @@ export const Users = () => {
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Role</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Manager</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Email</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {users.length === 0 ? (
+              {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-12 text-gray-400">
+                  <td colSpan={4} className="text-center py-12 text-gray-400">Loading users...</td>
+                </tr>
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="text-center py-12 text-gray-400">
                     <UserPlus className="mx-auto mb-3 text-gray-300" size={40} />
                     <p>No users yet. Click "New" to create one.</p>
                   </td>
@@ -118,23 +137,20 @@ export const Users = () => {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-                          {u.name.charAt(0)}
+                          {u.fullName.charAt(0)}
                         </div>
-                        <span className="font-medium text-gray-800">{u.name}</span>
+                        <span className="font-medium text-gray-800">{u.fullName}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant={u.role === 'Admin' ? 'approved' : u.role === 'Manager' ? 'submitted' : 'default'}>
-                        {u.role}
+                      <Badge variant={u.role === 'ADMIN' ? 'approved' : u.role === 'MANAGER' ? 'submitted' : 'default'}>
+                        {displayRole(u.role)}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{u.managerName || '—'}</td>
-                    <td className="px-4 py-3 text-gray-600">{u.email}</td>
-                    <td className="px-4 py-3 text-center">
-                      <Button size="sm" variant="outline" onClick={() => handleSendPassword(u.email)}>
-                        <Send size={14} className="mr-1" /> Send password
-                      </Button>
+                    <td className="px-4 py-3 text-gray-600">
+                      {u.managerId ? users.find(candidate => candidate.id === u.managerId)?.fullName || `#${u.managerId}` : '—'}
                     </td>
+                    <td className="px-4 py-3 text-gray-600">{u.email}</td>
                   </motion.tr>
                 ))
               )}
@@ -170,9 +186,16 @@ export const Users = () => {
             error={errors.email?.message as string}
             placeholder="e.g. marc@gmail.com"
           />
+          <Input
+            label="Temporary Password"
+            type="password"
+            {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Min 6 characters' } })}
+            error={errors.password?.message as string}
+            placeholder="minimum 6 characters"
+          />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit">Create User</Button>
+            <Button type="submit" isLoading={isSubmitting}>Create User</Button>
           </div>
         </form>
       </Modal>

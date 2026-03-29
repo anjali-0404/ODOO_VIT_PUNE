@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { DollarSign, CheckCircle, Clock, XCircle } from 'lucide-react';
-import { getExpenses, type Expense } from '../services/mockData';
 import { useAuth } from '../context/AuthContext';
+import { getMyExpenses, type ExpenseResponse } from '../services/api';
 import {
   Bar,
   BarChart,
@@ -17,7 +17,24 @@ import {
 
 export const Dashboard = () => {
   const { user } = useAuth();
-  const [expenses] = useState<Expense[]>(() => getExpenses());
+  const [expenses, setExpenses] = useState<ExpenseResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      setIsLoading(true);
+      try {
+        const data = await getMyExpenses();
+        setExpenses(data);
+      } catch {
+        setExpenses([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void loadDashboard();
+  }, []);
 
   const total = expenses.reduce((s, e) => s + e.amount, 0);
   const pending = expenses.filter(e => e.status === 'Submitted' || e.status === 'Waiting Approval');
@@ -41,7 +58,7 @@ export const Dashboard = () => {
   // Monthly trend from real data
   const monthMap: Record<string, number> = {};
   expenses.forEach(e => {
-    const month = e.date ? e.date.substring(0, 7) : 'Unknown';
+    const month = e.expenseDate ? e.expenseDate.substring(0, 7) : 'Unknown';
     monthMap[month] = (monthMap[month] || 0) + e.amount;
   });
   const months = Object.entries(monthMap).sort((a, b) => a[0].localeCompare(b[0]));
@@ -142,14 +159,15 @@ export const Dashboard = () => {
       {/* Recent expenses */}
       <Card>
         <h3 className="text-lg font-semibold mb-4 text-gray-800">Recent Expenses</h3>
-        {expenses.length === 0 ? (
+        {isLoading ? (
+          <p className="text-sm text-gray-400">Loading recent expenses...</p>
+        ) : expenses.length === 0 ? (
           <p className="text-sm text-gray-400">No recent expenses.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-2 px-3 text-gray-600 font-medium">Employee</th>
                   <th className="text-left py-2 px-3 text-gray-600 font-medium">Description</th>
                   <th className="text-left py-2 px-3 text-gray-600 font-medium">Amount</th>
                   <th className="text-left py-2 px-3 text-gray-600 font-medium">Status</th>
@@ -158,15 +176,13 @@ export const Dashboard = () => {
               <tbody>
                 {expenses.slice(0, 5).map(exp => (
                   <tr key={exp.id} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="py-2 px-3">{exp.employee}</td>
                     <td className="py-2 px-3 text-gray-600">{exp.description}</td>
                     <td className="py-2 px-3 font-medium">{exp.amount} {exp.currency}</td>
                     <td className="py-2 px-3">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                        exp.status === 'Approved' ? 'bg-green-100 text-green-700' :
-                        exp.status === 'Rejected' ? 'bg-red-100 text-red-700' :
-                        'bg-yellow-100 text-yellow-700'
-                      }`}>{exp.status}</span>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${exp.status === 'Approved' ? 'bg-green-100 text-green-700' :
+                          exp.status === 'Rejected' ? 'bg-red-100 text-red-700' :
+                            'bg-yellow-100 text-yellow-700'
+                        }`}>{exp.status}</span>
                     </td>
                   </tr>
                 ))}

@@ -17,6 +17,7 @@ const normalizeRole = (role: string | undefined): Exclude<Role, null> => {
     MANAGER: 'Manager',
     EMPLOYEE: 'Employee',
     FINANCE: 'Finance',
+    DIRECTOR: 'Director',
     CFO: 'CFO',
   };
 
