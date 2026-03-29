@@ -1,25 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Upload, Plus, Send, FileText } from 'lucide-react';
+import { Upload, Plus, FileText } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
-import { Button } from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
-import {
-  getExpensesByEmployee,
-  getExpenses,
-  submitExpense,
-  type Expense,
-} from '../services/mockData';
+import { getMyExpenses, type ExpenseResponse } from '../services/api';
 
 const statusToBadge = (status: string) => {
   const map: Record<string, 'draft' | 'submitted' | 'pending' | 'approved' | 'rejected'> = {
     Draft: 'draft',
+    DRAFT: 'draft',
     Submitted: 'submitted',
+    SUBMITTED: 'submitted',
     'Waiting Approval': 'pending',
+    PENDING: 'pending',
     Approved: 'approved',
+    APPROVED: 'approved',
     Rejected: 'rejected',
+    REJECTED: 'rejected',
   };
   return map[status] || 'default';
 };
@@ -28,32 +27,34 @@ export const Expenses = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<'upload' | 'new'>('upload');
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const loadExpenses = () => {
-    if (user?.role === 'Admin' || user?.role === 'Finance' || user?.role === 'CFO') {
-      setExpenses(getExpenses());
-    } else {
-      setExpenses(getExpensesByEmployee(user?.email || ''));
+  const loadExpenses = async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const data = await getMyExpenses();
+      setExpenses(data);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Failed to load expenses');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadExpenses();
+    void loadExpenses();
   }, [user]);
 
-  const toSubmit = expenses.filter(e => e.status === 'Draft');
-  const waitingApproval = expenses.filter(e => e.status === 'Submitted' || e.status === 'Waiting Approval');
-  const approved = expenses.filter(e => e.status === 'Approved');
+  const toSubmit = expenses.filter(e => e.status === 'DRAFT' || e.status === 'Draft');
+  const waitingApproval = expenses.filter(e => ['SUBMITTED', 'PENDING', 'Submitted', 'Waiting Approval'].includes(e.status));
+  const approved = expenses.filter(e => e.status === 'APPROVED' || e.status === 'Approved');
 
   const toSubmitTotal = toSubmit.reduce((s, e) => s + e.amount, 0);
   const waitingTotal = waitingApproval.reduce((s, e) => s + e.amount, 0);
   const approvedTotal = approved.reduce((s, e) => s + e.amount, 0);
-
-  const handleSubmitExpense = (id: string) => {
-    submitExpense(id);
-    loadExpenses();
-  };
 
   return (
     <div className="space-y-6">
@@ -109,7 +110,7 @@ export const Expenses = () => {
       </div>
 
       {/* Expense table matching wireframe columns */}
-      <Card className="overflow-hidden !p-0">
+      <Card className="overflow-hidden p-0!">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -126,7 +127,19 @@ export const Expenses = () => {
               </tr>
             </thead>
             <tbody>
-              {expenses.length === 0 ? (
+              {isLoading && (
+                <tr>
+                  <td colSpan={9} className="text-center py-12 text-gray-400">Loading expenses...</td>
+                </tr>
+              )}
+
+              {!isLoading && error && (
+                <tr>
+                  <td colSpan={9} className="text-center py-12 text-red-500">{error}</td>
+                </tr>
+              )}
+
+              {!isLoading && !error && expenses.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="text-center py-12 text-gray-400">
                     <FileText className="mx-auto mb-3 text-gray-300" size={40} />
@@ -134,7 +147,7 @@ export const Expenses = () => {
                   </td>
                 </tr>
               ) : (
-                expenses.map((exp) => (
+                !isLoading && !error && expenses.map((exp) => (
                   <motion.tr
                     key={exp.id}
                     initial={{ opacity: 0 }}
@@ -142,23 +155,17 @@ export const Expenses = () => {
                     className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
                     onClick={() => navigate(`/expenses/${exp.id}`)}
                   >
-                    <td className="px-4 py-3 font-medium text-gray-800">{exp.employee}</td>
-                    <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate">{exp.description}</td>
-                    <td className="px-4 py-3 text-gray-600">{exp.date}</td>
+                    <td className="px-4 py-3 font-medium text-gray-800">{user?.name || '-'}</td>
+                    <td className="px-4 py-3 text-gray-600 max-w-50 truncate">{exp.description}</td>
+                    <td className="px-4 py-3 text-gray-600">{exp.expenseDate}</td>
                     <td className="px-4 py-3 text-gray-600">{exp.category}</td>
-                    <td className="px-4 py-3 text-gray-600">{exp.paidBy}</td>
-                    <td className="px-4 py-3 text-gray-500 max-w-[150px] truncate">{exp.remarks}</td>
+                    <td className="px-4 py-3 text-gray-600">-</td>
+                    <td className="px-4 py-3 text-gray-500 max-w-37.5 truncate">-</td>
                     <td className="px-4 py-3 text-right font-medium text-gray-800">{exp.amount} {exp.currency}</td>
                     <td className="px-4 py-3 text-center">
                       <Badge variant={statusToBadge(exp.status)}>{exp.status}</Badge>
                     </td>
-                    <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                      {exp.status === 'Draft' && (
-                        <Button size="sm" variant="primary" onClick={() => handleSubmitExpense(exp.id)}>
-                          <Send size={14} className="mr-1" /> Submit
-                        </Button>
-                      )}
-                    </td>
+                    <td className="px-4 py-3 text-center">-</td>
                   </motion.tr>
                 ))
               )}
