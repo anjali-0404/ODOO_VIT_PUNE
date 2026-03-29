@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { DollarSign, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { getExpenses, type Expense } from '../services/mockData';
@@ -17,11 +17,7 @@ import {
 
 export const Dashboard = () => {
   const { user } = useAuth();
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-
-  useEffect(() => {
-    setExpenses(getExpenses());
-  }, []);
+  const [expenses] = useState<Expense[]>(() => getExpenses());
 
   const total = expenses.reduce((s, e) => s + e.amount, 0);
   const pending = expenses.filter(e => e.status === 'Submitted' || e.status === 'Waiting Approval');
