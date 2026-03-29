@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth, type Role } from '../context/AuthContext';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -27,7 +27,6 @@ export const Login = () => {
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>();
   const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [apiError, setApiError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -46,7 +45,7 @@ export const Login = () => {
         managerId: profile.managerId,
       });
 
-      navigate(location.state?.from || '/');
+      navigate('/dashboard');
     } catch (error) {
       setApiError(error instanceof Error ? error.message : 'Unable to login. Please try again.');
     } finally {
@@ -65,13 +64,13 @@ export const Login = () => {
             Sign in to access the comprehensive ERP Reimbursement Management System.
           </p>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-4">
             <Input
               label="Email"
               type="email"
-              {...register('email', { 
+              {...register('email', {
                 required: 'Email is required',
                 pattern: { value: /\S+@\S+\.\S+/, message: 'Invalid email format' }
               })}

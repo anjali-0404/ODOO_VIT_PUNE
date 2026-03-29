@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth, type User } from '../context/AuthContext';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
+import { signupCompanyAdmin } from '../services/api';
 
 interface SignupFormValues {
+  companyName: string;
   name: string;
   email: string;
   password: string;
@@ -16,32 +17,33 @@ interface SignupFormValues {
 
 export const Signup = () => {
   const { register, handleSubmit, formState: { errors } } = useForm<SignupFormValues>();
-  const { registerUser } = useAuth();
   const navigate = useNavigate();
   const [apiError, setApiError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const onSubmit = (data: SignupFormValues) => {
+  const onSubmit = async (data: SignupFormValues) => {
     setApiError('');
     if (data.password !== data.confirmPassword) {
       setApiError('Passwords do not match');
       return;
     }
 
-    const newUser: User = {
-      id: '',
-      name: data.name,
-      email: data.email,
-      password: data.password, // In real app, never store plain text
-      role: 'Admin', // Initially Admin as per requirement for company signup
-    };
+    setIsSubmitting(true);
+    try {
+      await signupCompanyAdmin({
+        companyName: data.companyName,
+        adminName: data.name,
+        adminEmail: data.email,
+        adminPassword: data.password,
+      });
 
-    const success = registerUser(newUser);
-    if (success) {
-      // Mock creation of company baseline
+      // Keep this existing local preference behavior for default currency.
       localStorage.setItem('company_currency', data.country);
       navigate('/login');
-    } else {
-      setApiError('User with this email already exists.');
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : 'Unable to signup. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -63,9 +65,15 @@ export const Signup = () => {
             Create a new company account and default currency.
           </p>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-4">
+            <Input
+              label="Company Name"
+              type="text"
+              {...register('companyName', { required: 'Company name is required' })}
+              error={errors.companyName?.message as string}
+            />
             <Input
               label="Name"
               type="text"
@@ -75,7 +83,7 @@ export const Signup = () => {
             <Input
               label="Email"
               type="email"
-              {...register('email', { 
+              {...register('email', {
                 required: 'Email is required',
                 pattern: { value: /\S+@\S+\.\S+/, message: 'Invalid email format' }
               })}
@@ -103,7 +111,7 @@ export const Signup = () => {
 
           {apiError && <p className="text-red-500 text-sm">{apiError}</p>}
 
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full" isLoading={isSubmitting}>
             Signup
           </Button>
 

@@ -12,6 +12,13 @@ export interface LoginResponse {
   accessToken: string;
 }
 
+export interface SignupPayload {
+  companyName: string;
+  adminName: string;
+  adminEmail: string;
+  adminPassword: string;
+}
+
 export interface ExpensePayload {
   description: string;
   expenseDate: string;
@@ -140,12 +147,24 @@ const getApiErrorMessage = (error: unknown): string => {
 
 export const loginUser = async (email: string, password: string): Promise<LoginResponse> => {
   try {
-    const { data } = await api.post<ApiResponse<AuthTokenResponse>>('/auth/login', { email, password });
+    const normalizedEmail = email.trim().toLowerCase();
+    const { data } = await api.post<ApiResponse<AuthTokenResponse>>('/auth/login', {
+      email: normalizedEmail,
+      password,
+    });
     if (!data?.data?.accessToken) {
       throw new Error('Login response is missing access token');
     }
     setAuthToken(data.data.accessToken);
     return { accessToken: data.data.accessToken };
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+};
+
+export const signupCompanyAdmin = async (payload: SignupPayload): Promise<void> => {
+  try {
+    await api.post('/auth/signup', payload);
   } catch (error) {
     throw new Error(getApiErrorMessage(error));
   }

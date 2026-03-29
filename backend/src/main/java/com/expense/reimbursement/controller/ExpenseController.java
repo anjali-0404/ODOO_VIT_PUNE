@@ -30,7 +30,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -54,8 +53,8 @@ public class ExpenseController {
     }
 
     @GetMapping("/my")
-    @PreAuthorize("hasRole('EMPLOYEE')")
-    @Operation(summary = "List my expenses", description = "Returns paginated expenses for authenticated employee, optionally filtered by status.")
+    @PreAuthorize("hasAnyRole('EMPLOYEE','MANAGER','ADMIN','FINANCE','DIRECTOR','CFO')")
+    @Operation(summary = "List my expenses", description = "Returns paginated expenses for authenticated user, optionally filtered by status.")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Expenses fetched", content = @Content(examples = @ExampleObject(value = "{\"success\":true,\"message\":\"My expenses fetched successfully\",\"data\":{\"items\":[],\"page\":0,\"size\":10,\"totalElements\":0,\"totalPages\":0,\"hasNext\":false,\"hasPrevious\":false}}"))),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request")
