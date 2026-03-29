@@ -5,6 +5,7 @@ Spring Boot backend for the Expense Reimbursement System.
 ## Overview
 
 This service provides:
+
 - JWT-based authentication and authorization
 - Role-based access control for employee, manager, finance, and admin flows
 - Expense submission and lifecycle management
@@ -82,6 +83,7 @@ jdbc:postgresql://localhost:5432/expense_db
 ```
 
 JPA behavior:
+
 - ddl-auto: update
 - show-sql: true
 - open-in-view: false
@@ -104,7 +106,7 @@ mvnw.cmd spring-boot:run
 
 Backend default URL:
 
-- http://localhost:8080
+- <http://localhost:8080>
 
 ## Build and Test
 
@@ -128,11 +130,11 @@ Base path:
 
 Swagger UI:
 
-- http://localhost:8080/swagger-ui/index.html
+- <http://localhost:8080/swagger-ui/index.html>
 
 OpenAPI docs:
 
-- http://localhost:8080/v3/api-docs
+- <http://localhost:8080/v3/api-docs>
 
 ## Endpoint Groups
 
@@ -163,7 +165,8 @@ OpenAPI docs:
 - All other /api/** endpoints require authentication.
 
 Rate limiting:
-- API rate limiting filter is enabled for /api/** except /api/auth/**.
+
+- API rate limiting filter is enabled for `/api/**` except `/api/auth/**`.
 - Current limit in code: 120 requests per minute per client IP.
 
 ## Notes for Contributors

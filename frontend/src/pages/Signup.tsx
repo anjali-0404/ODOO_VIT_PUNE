@@ -6,13 +6,21 @@ import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
 
+interface SignupFormValues {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  country: string;
+}
+
 export const Signup = () => {
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { register, handleSubmit, formState: { errors } } = useForm<SignupFormValues>();
   const { registerUser } = useAuth();
   const navigate = useNavigate();
   const [apiError, setApiError] = useState('');
 
-  const onSubmit = (data: Record<string, any>) => {
+  const onSubmit = (data: SignupFormValues) => {
     setApiError('');
     if (data.password !== data.confirmPassword) {
       setApiError('Passwords do not match');

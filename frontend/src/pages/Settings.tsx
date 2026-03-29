@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, GripVertical, Save, ArrowUp, ArrowDown } from 'lucide-react';
 import { Card } from '../components/ui/Card';
@@ -19,8 +19,8 @@ import {
 
 export const Settings = () => {
   const { user } = useAuth();
-  const [rules, setRules] = useState<ApprovalRule[]>([]);
-  const [users, setUsers] = useState<MockUser[]>([]);
+  const [rules, setRules] = useState<ApprovalRule[]>(() => getApprovalRules());
+  const [users, setUsers] = useState<MockUser[]>(() => getMockUsers());
   const [editingRule, setEditingRule] = useState<ApprovalRule | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -28,10 +28,6 @@ export const Settings = () => {
     setRules(getApprovalRules());
     setUsers(getMockUsers());
   };
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   const userOptions = users.map(u => ({ label: u.name, value: u.id }));
   const managerOptions = users
